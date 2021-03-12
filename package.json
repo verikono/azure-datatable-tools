@@ -1,8 +1,8 @@
 {
-  "name": "simple-datatables-framework",
-  "version": "1.0.0",
+  "name": "@verikono/azure-datatable-tools",
+  "version": "0.0.1",
   "main": "index.js",
-  "repository": "git@github.com:verikono/simple-datatables-framework.git",
+  "repository": "git@github.com:verikono/azure-datatable-tools.git",
   "author": "Bren Norris <bnorris@enterrasolutions.com>",
   "license": "MIT",
   "dependencies": {
