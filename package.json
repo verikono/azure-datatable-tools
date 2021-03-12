@@ -1,5 +1,5 @@
 {
-  "name": "@verikono/azure-datatable-tools",
+  "name": "verikono-azure-datatable-tools",
   "version": "0.0.1",
   "main": "index.js",
   "repository": "git@github.com:verikono/azure-datatable-tools.git",
