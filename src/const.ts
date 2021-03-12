@@ -1,0 +1,1 @@
+export const default_authentication_method = 'sharedKeyCredential'
