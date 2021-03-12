@@ -71,6 +71,13 @@ export class AzureDataTablesClient {
         }
     }
 
+    /**
+     * Check for the existence of a table
+     * 
+     * @param props the keyword argument object
+     * @param props.table the table name 
+     * @returns true when the table exists
+     */
     async exists(props:I.existsProps):Promise<boolean> {
 
         try {
@@ -129,7 +136,7 @@ export class AzureDataTablesClient {
 
     }
 
-    _clientBySharedKeyCredential(props:I._clientBySharedKeyCredentialProps):TableServiceClient|TableClient {
+    private _clientBySharedKeyCredential(props:I._clientBySharedKeyCredentialProps):TableServiceClient|TableClient {
 
         const {
             type,

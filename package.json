@@ -6,7 +6,8 @@
   "author": "Bren Norris <bnorris@enterrasolutions.com>",
   "license": "MIT",
   "scripts": {
-    "document": "typedoc --out docs src/index.ts"
+    "document": "typedoc --out docs src/index.ts",
+    "build": "tsc"
   },
   "dependencies": {
     "@azure/data-tables": "^1.0.0-beta.5",
