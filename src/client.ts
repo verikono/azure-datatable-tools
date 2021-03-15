@@ -279,8 +279,14 @@ export class AzureDataTablesClient {
     }
 
     /**
+     * Reduce on rows.
      * 
-     * @param props 
+     * @param props Object the keyword argument object
+     * @param props.table String the table name
+     * @param props.fn Function the reducer
+     * @param props.initial Any the initial value for the reducer
+     * 
+     * @returns Promise<any> the reduced value
      */
     public async reduce( props:I.reduceProps ) {
 
@@ -345,6 +351,14 @@ export class AzureDataTablesClient {
         }
     }
 
+    /**
+     * Get the count of the rows.
+     * 
+     * @param props Object the keyword argument object
+     * @param props.table String the table name 
+     * 
+     * @returns Promise<number> the number of rows 
+     */
     public async count( props:I.countProps ):Promise<number> {
 
         try {
