@@ -22,13 +22,75 @@ export interface existsProps {
 
 export interface rowsProps {
     table: string;
-    reduce?: Function;
-    find?: Function;
-    initial?: any;
+    limit?: number;
+    fields?: Array<string>;
+}
+
+export interface emptyProps {
+    table: string;
 }
 
 export interface rowProps {
     table: string;
     partitionKey: string;
     rowKey: string;
+}
+
+export interface findProps {
+    table: string;
+    fn: Function;
+}
+
+export interface countProps {
+    table: string;
+}
+
+export interface reduceProps {
+    table: string;
+    fn: Function;
+    initial: any;
+}
+
+export interface filterProps {
+    table: string;
+    fn: Function;
+}
+
+export interface azCreateEntitiesProps {
+    table: string;
+    data: any;
+    partition: string|Function
+    row: string|Function
+    dropKeys: boolean
+}
+
+export interface _insertAsRecordsProps extends azCreateEntitiesProps {
+    data: Array<record>;
+}
+
+export interface persistProps {
+    table: string;
+    data: any;
+    partition: string|Function
+    row: string|Function
+    datatype?: 'records'
+    forceDrop?: boolean
+    dropKeys?: boolean
+}
+
+export interface record {
+    [key: string]: string|number;
+}
+
+export interface _binDataProps {
+    data: Array<record>
+}
+
+export interface dataSpool {
+    [key:string]: dataSpoolBin
+}
+
+export interface dataSpoolBin {
+    currentBinIdx: number
+    bins: Array<Array<record>>
 }
