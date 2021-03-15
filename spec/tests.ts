@@ -7,6 +7,9 @@ import { assert } from 'chai';
 import {
     AzureDataTablesClient
 } from '../src';
+import {
+    AzureDataTablesClient as otherADTC
+} from '../src';
 
 import {
     TableServiceClient,
@@ -51,6 +54,37 @@ describe(`simple-datatables-framework`, function() {
 
         })
 
+
+    });
+
+    describe.only(`Environment tests`, () => {
+
+        it(`sets global environment variables to use across instances`, () => {
+
+            const instance1 = new AzureDataTablesClient();
+            const instance2 = new AzureDataTablesClient({global_keys: {AZURE_STORAGE_ACCOUNT: "def_ASA"}});
+            const instance3 = new otherADTC();
+
+
+            assert(
+                instance2.get_configured_keys().AZURE_STORAGE_ACCOUNT === 'def_ASA' &&
+                instance2.get_configured_keys().AZURE_STORAGE_ACCOUNT === 'def_ASA' &&
+                instance3.get_configured_keys().AZURE_STORAGE_ACCOUNT === 'def_ASA',
+                "failed"
+            )
+        });
+
+        it(`sets local (specific to the instance) varabile to use`, () => {
+
+            const instance1 = new AzureDataTablesClient();
+            const instance2 = new AzureDataTablesClient({AZURE_STORAGE_ACCOUNT: "local_ASA"});
+
+            assert(
+                instance1.get_configured_keys().AZURE_STORAGE_ACCOUNT !==
+                instance2.get_configured_keys().AZURE_STORAGE_ACCOUNT,
+                "failed"
+            )
+        });
 
     });
 
@@ -164,8 +198,7 @@ describe(`simple-datatables-framework`, function() {
 
         });
 
-
-        describe.only(`AzureDataTablesClient::reduce`, () => {
+        describe(`AzureDataTablesClient::reduce`, () => {
 
             it(`common usage`, async () => {
 
@@ -194,12 +227,6 @@ describe(`simple-datatables-framework`, function() {
             });
 
         });
-
-
-        describe(`AzureDataTablesClient::reduce`, () => {
-
-            it(`standard usage`);
-        })
 
         describe(`AzureDataTablesClient::filter`, () => {
 

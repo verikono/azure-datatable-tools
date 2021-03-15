@@ -5,6 +5,10 @@ import {
     ListTableEntitiesOptions
 } from '@azure/data-tables';
 
+import {
+    config_keys,
+    global_keys
+} from './const';
 
 import * as I from './types';
 import * as C from './const';
@@ -12,10 +16,30 @@ import * as C from './const';
 export class AzureDataTablesClient {
 
     authentication_method:string;
+    instance_keys:I.INSTANCE_ENVIRONMENT_VARIABLES = {};
 
     constructor( props:I.constructorProps={} ) {
 
+        const {
+            global_keys: argued_global_keys,
+            AZURE_STORAGE_ACCOUNT,
+            AZURE_STORAGE_ACCOUNT_KEY
+        } = props;
+
         this.authentication_method = props.method || C.default_authentication_method;
+
+        if(global_keys) {
+            [
+                'AZURE_STORAGE_ACCOUNT',
+                'AZURE_STORAGE_ACCOUNT_KEY'
+            ].forEach(key => {
+                if(argued_global_keys && argued_global_keys.hasOwnProperty(key))
+                    global_keys[key] = argued_global_keys[key]
+            });
+        }
+
+        if(AZURE_STORAGE_ACCOUNT)
+            this.instance_keys.AZURE_STORAGE_ACCOUNT = AZURE_STORAGE_ACCOUNT;
     }
 
     service_client():TableServiceClient {
@@ -550,23 +574,24 @@ export class AzureDataTablesClient {
             throw `clientBySharedKeyCredential requires table be argued for table client`;
 
         const required_keys = [
-            "AZURE_STORAGE_ACCOUNT",
-            "AZURE_STORAGE_ACCOUNT_KEY"
+            'AZURE_STORAGE_ACCOUNT',
+            'AZURE_STORAGE_ACCOUNT_KEY'
         ];
 
+        const k = this.get_configured_keys();
+
         for(const key of required_keys) {
-            if(typeof process.env[key] !== 'string' || process.env[key].length === 0)
+            if(typeof process.env[k[key]] !== 'string' || process.env[k[key]].length === 0)
                 throw Error(`missing environment key ${key}`)
         }
 
-        const {
-            AZURE_STORAGE_ACCOUNT,
-            AZURE_STORAGE_ACCOUNT_KEY
-        } = process.env;
 
-        const credential = new TablesSharedKeyCredential(AZURE_STORAGE_ACCOUNT, AZURE_STORAGE_ACCOUNT_KEY);
+        const credential = new TablesSharedKeyCredential(
+            process.env[k['AZURE_STORAGE_ACCOUNT']],
+            process.env[k['AZURE_STORAGE_ACCOUNT_KEY']]
+        );
 
-        const url = `https:${AZURE_STORAGE_ACCOUNT}.table.core.windows.net`;
+        const url = `https:${process.env[k['AZURE_STORAGE_ACCOUNT']]}.table.core.windows.net`;
 
         switch(type) {
             case 'service':
@@ -577,10 +602,26 @@ export class AzureDataTablesClient {
 
     }
 
+    get_configured_keys() {
+
+        const { instance_keys } = this;
+        const _a = config_keys
+        const _g = global_keys
+        return config_keys.reduce<any>((acc, key) => {
+                    acc[key] = instance_keys[key] || global_keys[key] 
+                    return acc;
+                }, {})
+    }
+
     valid_environment() {
 
     }
 
-
+    get_authentication_keys() {
+        return {
+            keys: this.instance_keys,
+            global_keys: global_keys
+        };
+    }
 
 }

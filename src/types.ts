@@ -1,5 +1,18 @@
+interface GLOBAL_ENVIRONMENT_VARIABLES {
+    AZURE_STORAGE_ACCOUNT: string;
+    AZURE_STORAGE_ACCOUNT_KEY?: string;
+}
+
+export interface INSTANCE_ENVIRONMENT_VARIABLES {
+    AZURE_STORAGE_ACCOUNT?: string;
+    AZURE_STORAGE_ACCOUNT_KEY?: string;
+}
+
 export interface constructorProps {
     method?: 'sharedKeyCredential';
+    global_keys?: GLOBAL_ENVIRONMENT_VARIABLES
+    AZURE_STORAGE_ACCOUNT?: string;
+    AZURE_STORAGE_ACCOUNT_KEY?: string;
 }
 
 export interface _clientBySharedKeyCredentialProps {

@@ -37,10 +37,24 @@ var __asyncValues = (this && this.__asyncValues) || function (o) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AzureDataTablesClient = void 0;
 const data_tables_1 = require("@azure/data-tables");
+const const_1 = require("./const");
 const C = __importStar(require("./const"));
 class AzureDataTablesClient {
     constructor(props = {}) {
+        this.instance_keys = {};
+        const { global_keys: argued_global_keys, AZURE_STORAGE_ACCOUNT, AZURE_STORAGE_ACCOUNT_KEY } = props;
         this.authentication_method = props.method || C.default_authentication_method;
+        if (const_1.global_keys) {
+            [
+                'AZURE_STORAGE_ACCOUNT',
+                'AZURE_STORAGE_ACCOUNT_KEY'
+            ].forEach(key => {
+                if (argued_global_keys && argued_global_keys.hasOwnProperty(key))
+                    const_1.global_keys[key] = argued_global_keys[key];
+            });
+        }
+        if (AZURE_STORAGE_ACCOUNT)
+            this.instance_keys.AZURE_STORAGE_ACCOUNT = AZURE_STORAGE_ACCOUNT;
     }
     service_client() {
         try {
@@ -101,7 +115,7 @@ class AzureDataTablesClient {
      * @returns true when the table exists
      */
     exists(props) {
-        var e_1, _a;
+        var e_1, _b;
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 const { table } = props;
@@ -119,7 +133,7 @@ class AzureDataTablesClient {
                 catch (e_1_1) { e_1 = { error: e_1_1 }; }
                 finally {
                     try {
-                        if (tables_1_1 && !tables_1_1.done && (_a = tables_1.return)) yield _a.call(tables_1);
+                        if (tables_1_1 && !tables_1_1.done && (_b = tables_1.return)) yield _b.call(tables_1);
                     }
                     finally { if (e_1) throw e_1.error; }
                 }
@@ -162,7 +176,7 @@ class AzureDataTablesClient {
      * at times until it can make a tablename available for common use.
      */
     empty(props) {
-        var e_2, _a;
+        var e_2, _b;
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 const { table } = props;
@@ -171,8 +185,8 @@ class AzureDataTablesClient {
                 const client = yield this.table_client({ table });
                 let spool = {};
                 try {
-                    for (var _b = __asyncValues(yield client.listEntities()), _c; _c = yield _b.next(), !_c.done;) {
-                        const entity = _c.value;
+                    for (var _c = __asyncValues(yield client.listEntities()), _d; _d = yield _c.next(), !_d.done;) {
+                        const entity = _d.value;
                         if (!spool.hasOwnProperty(entity.partitionKey)) {
                             spool[entity.partitionKey] = { currentBinIdx: 0, bins: [[]] };
                         }
@@ -188,7 +202,7 @@ class AzureDataTablesClient {
                 catch (e_2_1) { e_2 = { error: e_2_1 }; }
                 finally {
                     try {
-                        if (_c && !_c.done && (_a = _b.return)) yield _a.call(_b);
+                        if (_d && !_d.done && (_b = _c.return)) yield _b.call(_c);
                     }
                     finally { if (e_2) throw e_2.error; }
                 }
@@ -224,7 +238,7 @@ class AzureDataTablesClient {
      * @param props
      */
     rows(props) {
-        var e_3, _a;
+        var e_3, _b;
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 const { table, fields } = props;
@@ -235,15 +249,15 @@ class AzureDataTablesClient {
                 }
                 const result = [];
                 try {
-                    for (var _b = __asyncValues(client.listEntities(options)), _c; _c = yield _b.next(), !_c.done;) {
-                        const entity = _c.value;
+                    for (var _c = __asyncValues(client.listEntities(options)), _d; _d = yield _c.next(), !_d.done;) {
+                        const entity = _d.value;
                         result.push(entity);
                     }
                 }
                 catch (e_3_1) { e_3 = { error: e_3_1 }; }
                 finally {
                     try {
-                        if (_c && !_c.done && (_a = _b.return)) yield _a.call(_b);
+                        if (_d && !_d.done && (_b = _c.return)) yield _b.call(_c);
                     }
                     finally { if (e_3) throw e_3.error; }
                 }
@@ -255,14 +269,14 @@ class AzureDataTablesClient {
         });
     }
     find(props) {
-        var e_4, _a;
+        var e_4, _b;
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 const { table, fn } = props;
                 const client = yield this.table_client({ table });
                 try {
-                    for (var _b = __asyncValues(client.listEntities()), _c; _c = yield _b.next(), !_c.done;) {
-                        const entity = _c.value;
+                    for (var _c = __asyncValues(client.listEntities()), _d; _d = yield _c.next(), !_d.done;) {
+                        const entity = _d.value;
                         if (fn(entity)) {
                             return entity;
                         }
@@ -271,7 +285,7 @@ class AzureDataTablesClient {
                 catch (e_4_1) { e_4 = { error: e_4_1 }; }
                 finally {
                     try {
-                        if (_c && !_c.done && (_a = _b.return)) yield _a.call(_b);
+                        if (_d && !_d.done && (_b = _c.return)) yield _b.call(_c);
                     }
                     finally { if (e_4) throw e_4.error; }
                 }
@@ -283,11 +297,17 @@ class AzureDataTablesClient {
         });
     }
     /**
+     * Reduce on rows.
      *
-     * @param props
+     * @param props Object the keyword argument object
+     * @param props.table String the table name
+     * @param props.fn Function the reducer
+     * @param props.initial Any the initial value for the reducer
+     *
+     * @returns Promise<any> the reduced value
      */
     reduce(props) {
-        var e_5, _a;
+        var e_5, _b;
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 const { table, fn, initial } = props;
@@ -295,15 +315,15 @@ class AzureDataTablesClient {
                 const client = yield this.table_client({ table });
                 let cnt = 0;
                 try {
-                    for (var _b = __asyncValues(client.listEntities()), _c; _c = yield _b.next(), !_c.done;) {
-                        const entity = _c.value;
+                    for (var _c = __asyncValues(client.listEntities()), _d; _d = yield _c.next(), !_d.done;) {
+                        const entity = _d.value;
                         acc = fn(acc, entity, cnt);
                     }
                 }
                 catch (e_5_1) { e_5 = { error: e_5_1 }; }
                 finally {
                     try {
-                        if (_c && !_c.done && (_a = _b.return)) yield _a.call(_b);
+                        if (_d && !_d.done && (_b = _c.return)) yield _b.call(_c);
                     }
                     finally { if (e_5) throw e_5.error; }
                 }
@@ -324,7 +344,7 @@ class AzureDataTablesClient {
      * @returns
      */
     filter(props) {
-        var e_6, _a;
+        var e_6, _b;
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 const { table, fn } = props;
@@ -333,8 +353,8 @@ class AzureDataTablesClient {
                 const options = {};
                 let cnt = 0;
                 try {
-                    for (var _b = __asyncValues(client.listEntities()), _c; _c = yield _b.next(), !_c.done;) {
-                        const entity = _c.value;
+                    for (var _c = __asyncValues(client.listEntities()), _d; _d = yield _c.next(), !_d.done;) {
+                        const entity = _d.value;
                         if (fn(entity, cnt)) {
                             result.push(entity);
                         }
@@ -344,7 +364,7 @@ class AzureDataTablesClient {
                 catch (e_6_1) { e_6 = { error: e_6_1 }; }
                 finally {
                     try {
-                        if (_c && !_c.done && (_a = _b.return)) yield _a.call(_b);
+                        if (_d && !_d.done && (_b = _c.return)) yield _b.call(_c);
                     }
                     finally { if (e_6) throw e_6.error; }
                 }
@@ -355,6 +375,14 @@ class AzureDataTablesClient {
             }
         });
     }
+    /**
+     * Get the count of the rows.
+     *
+     * @param props Object the keyword argument object
+     * @param props.table String the table name
+     *
+     * @returns Promise<number> the number of rows
+     */
     count(props) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
@@ -493,16 +521,16 @@ class AzureDataTablesClient {
         if (type === 'table' && !Boolean(table))
             throw `clientBySharedKeyCredential requires table be argued for table client`;
         const required_keys = [
-            "AZURE_STORAGE_ACCOUNT",
-            "AZURE_STORAGE_ACCOUNT_KEY"
+            'AZURE_STORAGE_ACCOUNT',
+            'AZURE_STORAGE_ACCOUNT_KEY'
         ];
+        const k = this.get_configured_keys();
         for (const key of required_keys) {
-            if (typeof process.env[key] !== 'string' || process.env[key].length === 0)
+            if (typeof process.env[k[key]] !== 'string' || process.env[k[key]].length === 0)
                 throw Error(`missing environment key ${key}`);
         }
-        const { AZURE_STORAGE_ACCOUNT, AZURE_STORAGE_ACCOUNT_KEY } = process.env;
-        const credential = new data_tables_1.TablesSharedKeyCredential(AZURE_STORAGE_ACCOUNT, AZURE_STORAGE_ACCOUNT_KEY);
-        const url = `https:${AZURE_STORAGE_ACCOUNT}.table.core.windows.net`;
+        const credential = new data_tables_1.TablesSharedKeyCredential(process.env[k['AZURE_STORAGE_ACCOUNT']], process.env[k['AZURE_STORAGE_ACCOUNT_KEY']]);
+        const url = `https:${process.env[k['AZURE_STORAGE_ACCOUNT']]}.table.core.windows.net`;
         switch (type) {
             case 'service':
                 return new data_tables_1.TableServiceClient(url, credential);
@@ -510,7 +538,22 @@ class AzureDataTablesClient {
                 return new data_tables_1.TableClient(url, table, credential);
         }
     }
+    get_configured_keys() {
+        const { instance_keys } = this;
+        const _a = const_1.config_keys;
+        const _g = const_1.global_keys;
+        return const_1.config_keys.reduce((acc, key) => {
+            acc[key] = instance_keys[key] || const_1.global_keys[key];
+            return acc;
+        }, {});
+    }
     valid_environment() {
+    }
+    get_authentication_keys() {
+        return {
+            keys: this.instance_keys,
+            global_keys: const_1.global_keys
+        };
     }
 }
 exports.AzureDataTablesClient = AzureDataTablesClient;
