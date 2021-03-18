@@ -48,7 +48,7 @@ Name | Type |
 
 **Returns:** [*AzureDataTablesClient*](azuredatatablesclient.md)
 
-Defined in: [client.ts:19](https://github.com/verikono/azure-datatable-tools/blob/910520c/src/client.ts#L19)
+Defined in: [client.ts:19](https://github.com/verikono/azure-datatable-tools/blob/9abefd3/src/client.ts#L19)
 
 ## Properties
 
@@ -56,7 +56,7 @@ Defined in: [client.ts:19](https://github.com/verikono/azure-datatable-tools/blo
 
 • **authentication\_method**: *string*
 
-Defined in: [client.ts:18](https://github.com/verikono/azure-datatable-tools/blob/910520c/src/client.ts#L18)
+Defined in: [client.ts:18](https://github.com/verikono/azure-datatable-tools/blob/9abefd3/src/client.ts#L18)
 
 ___
 
@@ -64,7 +64,7 @@ ___
 
 • **instance\_keys**: INSTANCE\_ENVIRONMENT\_VARIABLES
 
-Defined in: [client.ts:19](https://github.com/verikono/azure-datatable-tools/blob/910520c/src/client.ts#L19)
+Defined in: [client.ts:19](https://github.com/verikono/azure-datatable-tools/blob/9abefd3/src/client.ts#L19)
 
 ## Methods
 
@@ -80,7 +80,7 @@ Name | Type |
 
 **Returns:** *TableServiceClient* \| *TableClient*
 
-Defined in: [client.ts:566](https://github.com/verikono/azure-datatable-tools/blob/910520c/src/client.ts#L566)
+Defined in: [client.ts:566](https://github.com/verikono/azure-datatable-tools/blob/9abefd3/src/client.ts#L566)
 
 ___
 
@@ -96,7 +96,7 @@ Name | Type |
 
 **Returns:** *Promise*<any\>
 
-Defined in: [client.ts:478](https://github.com/verikono/azure-datatable-tools/blob/910520c/src/client.ts#L478)
+Defined in: [client.ts:478](https://github.com/verikono/azure-datatable-tools/blob/9abefd3/src/client.ts#L478)
 
 ___
 
@@ -112,7 +112,7 @@ Name | Type |
 
 **Returns:** *void*
 
-Defined in: [client.ts:562](https://github.com/verikono/azure-datatable-tools/blob/910520c/src/client.ts#L562)
+Defined in: [client.ts:562](https://github.com/verikono/azure-datatable-tools/blob/9abefd3/src/client.ts#L562)
 
 ___
 
@@ -132,7 +132,7 @@ Name | Type | Description |
 
 Promise<number> the number of rows
 
-Defined in: [client.ts:386](https://github.com/verikono/azure-datatable-tools/blob/910520c/src/client.ts#L386)
+Defined in: [client.ts:386](https://github.com/verikono/azure-datatable-tools/blob/9abefd3/src/client.ts#L386)
 
 ___
 
@@ -156,7 +156,7 @@ Name | Type | Description |
 
 Promise resolving true upon success.
 
-Defined in: [client.ts:161](https://github.com/verikono/azure-datatable-tools/blob/910520c/src/client.ts#L161)
+Defined in: [client.ts:161](https://github.com/verikono/azure-datatable-tools/blob/9abefd3/src/client.ts#L161)
 
 ___
 
@@ -177,7 +177,7 @@ Name | Type |
 
 **Returns:** *Promise*<boolean\>
 
-Defined in: [client.ts:185](https://github.com/verikono/azure-datatable-tools/blob/910520c/src/client.ts#L185)
+Defined in: [client.ts:185](https://github.com/verikono/azure-datatable-tools/blob/9abefd3/src/client.ts#L185)
 
 ___
 
@@ -197,7 +197,7 @@ Name | Type | Description |
 
 true when the table exists
 
-Defined in: [client.ts:121](https://github.com/verikono/azure-datatable-tools/blob/910520c/src/client.ts#L121)
+Defined in: [client.ts:121](https://github.com/verikono/azure-datatable-tools/blob/9abefd3/src/client.ts#L121)
 
 ___
 
@@ -215,7 +215,7 @@ Name | Type | Description |
 
 **Returns:** *Promise*<any[]\>
 
-Defined in: [client.ts:349](https://github.com/verikono/azure-datatable-tools/blob/910520c/src/client.ts#L349)
+Defined in: [client.ts:349](https://github.com/verikono/azure-datatable-tools/blob/9abefd3/src/client.ts#L349)
 
 ___
 
@@ -231,7 +231,7 @@ Name | Type |
 
 **Returns:** *Promise*<record\>
 
-Defined in: [client.ts:279](https://github.com/verikono/azure-datatable-tools/blob/910520c/src/client.ts#L279)
+Defined in: [client.ts:279](https://github.com/verikono/azure-datatable-tools/blob/9abefd3/src/client.ts#L279)
 
 ___
 
@@ -248,7 +248,7 @@ Name | Type |
 `global_keys.AZURE_STORAGE_ACCOUNT_KEY` | *string* |
 `keys` | INSTANCE\_ENVIRONMENT\_VARIABLES |
 
-Defined in: [client.ts:620](https://github.com/verikono/azure-datatable-tools/blob/910520c/src/client.ts#L620)
+Defined in: [client.ts:620](https://github.com/verikono/azure-datatable-tools/blob/9abefd3/src/client.ts#L620)
 
 ___
 
@@ -258,7 +258,7 @@ ___
 
 **Returns:** *any*
 
-Defined in: [client.ts:605](https://github.com/verikono/azure-datatable-tools/blob/910520c/src/client.ts#L605)
+Defined in: [client.ts:605](https://github.com/verikono/azure-datatable-tools/blob/9abefd3/src/client.ts#L605)
 
 ___
 
@@ -282,7 +282,7 @@ Name | Type |
 
 **Returns:** *Promise*<boolean\>
 
-Defined in: [client.ts:416](https://github.com/verikono/azure-datatable-tools/blob/910520c/src/client.ts#L416)
+Defined in: [client.ts:416](https://github.com/verikono/azure-datatable-tools/blob/9abefd3/src/client.ts#L416)
 
 ___
 
@@ -302,7 +302,7 @@ Name | Type | Description |
 
 Promise<any> the reduced value
 
-Defined in: [client.ts:315](https://github.com/verikono/azure-datatable-tools/blob/910520c/src/client.ts#L315)
+Defined in: [client.ts:315](https://github.com/verikono/azure-datatable-tools/blob/9abefd3/src/client.ts#L315)
 
 ___
 
@@ -314,7 +314,7 @@ Remove a row by Parition and Row Key
 
 **Returns:** *Promise*<void\>
 
-Defined in: [client.ts:241](https://github.com/verikono/azure-datatable-tools/blob/910520c/src/client.ts#L241)
+Defined in: [client.ts:241](https://github.com/verikono/azure-datatable-tools/blob/9abefd3/src/client.ts#L241)
 
 ___
 
@@ -332,7 +332,7 @@ Name | Type |
 
 **Returns:** *Promise*<record[]\>
 
-Defined in: [client.ts:251](https://github.com/verikono/azure-datatable-tools/blob/910520c/src/client.ts#L251)
+Defined in: [client.ts:251](https://github.com/verikono/azure-datatable-tools/blob/9abefd3/src/client.ts#L251)
 
 ___
 
@@ -342,7 +342,7 @@ ___
 
 **Returns:** *TableServiceClient*
 
-Defined in: [client.ts:45](https://github.com/verikono/azure-datatable-tools/blob/910520c/src/client.ts#L45)
+Defined in: [client.ts:45](https://github.com/verikono/azure-datatable-tools/blob/9abefd3/src/client.ts#L45)
 
 ___
 
@@ -358,7 +358,7 @@ Name | Type |
 
 **Returns:** *Promise*<TableClient\>
 
-Defined in: [client.ts:60](https://github.com/verikono/azure-datatable-tools/blob/910520c/src/client.ts#L60)
+Defined in: [client.ts:60](https://github.com/verikono/azure-datatable-tools/blob/9abefd3/src/client.ts#L60)
 
 ___
 
@@ -368,4 +368,4 @@ ___
 
 **Returns:** *void*
 
-Defined in: [client.ts:616](https://github.com/verikono/azure-datatable-tools/blob/910520c/src/client.ts#L616)
+Defined in: [client.ts:616](https://github.com/verikono/azure-datatable-tools/blob/9abefd3/src/client.ts#L616)

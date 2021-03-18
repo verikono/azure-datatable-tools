@@ -25,10 +25,11 @@ describe(`simple-datatables-framework`, function() {
     //it can take some time for the azure queue to complete a task.
     this.timeout(60000);
 
-    describe(`Azure queue recovery/mitigation tests`, () => {
+    describe.skip(`Azure queue recovery/mitigation tests`, () => {
 
         it(`Manages a table currently queued for deletion`, async () => {
 
+            const table = "testDeletionQueue";
             const testRowsLength = 50;
 
             let result;
@@ -36,7 +37,6 @@ describe(`simple-datatables-framework`, function() {
             const data:Array<I.record> = mockData(testRowsLength);
             const immutable_test = JSON.stringify(data);
 
-            const table = "testDeletionQueue";
 
             const instance = new AzureDataTablesClient();
             result = await instance.persist({table, data, partition:"myPK", row:"myRK", dropKeys: true});
@@ -52,12 +52,13 @@ describe(`simple-datatables-framework`, function() {
             const count = await instance.count({table});
             assert(count === testRowsLength, 'failed')
 
+            await instance.drop({table});
         })
 
 
     });
 
-    describe.only(`Environment tests`, () => {
+    describe(`Environment tests`, () => {
 
         it(`sets global environment variables to use across instances`, () => {
 
@@ -86,6 +87,11 @@ describe(`simple-datatables-framework`, function() {
             )
         });
 
+        it(`resets the globals to defaults`, () => {
+
+            const instance  = new AzureDataTablesClient({global_keys: {AZURE_STORAGE_ACCOUNT: "AZURE_STORAGE_ACCOUNT"}});
+        });
+
     });
 
     describe('method tests', () => {
@@ -101,26 +107,31 @@ describe(`simple-datatables-framework`, function() {
 
         describe(`AzureDataTablesClient::table_client`, () => {
 
-            it(`argued with a table`, async () => {
+            it(`common use`, async () => {
+
+                const table = 'testsTableClient'
                 const instance = new AzureDataTablesClient();
-                const client = await instance.table_client({table: 'mytest'});
+                const client = await instance.table_client({table});
                 assert(client instanceof TableClient, 'failed - did not receive a TableClient instance');
                 const result = await client.createEntity({partitionKey: 'pk_1', rowKey: 'rk_1'});
-                console.log('-')
+                await instance.drop({table});
             });
 
         });
 
         describe(`AzureDataTablesClient::exists`, () => {
 
-            it(`argued with table`, async () => {
+            it(`common use`, async () => {
 
                 const table = 'testsExists';
                 const instance = new AzureDataTablesClient();
                 const exists = await instance.exists({table});
+                assert(exists === false, `table ${table} should not exist`);
+                await instance.table_client({table});
+                const existsnow = await instance.exists({table});
+                assert(existsnow === true, 'method did not create a table');
                 await instance.drop({table});
 
-                assert(exists === true, 'method did not create a table');
             });
 
         });
@@ -194,6 +205,7 @@ describe(`simple-datatables-framework`, function() {
                 const result = await instance.filter({table, fn});
                 assert(Array.isArray(result) && result.length === 55, 'failed');
 
+                await instance.drop({table});
             });
 
         });
@@ -223,6 +235,8 @@ describe(`simple-datatables-framework`, function() {
                     assert(i === result[i],  'failed');
                     i++;
                 }
+
+                await instance.drop({table});
 
             });
 

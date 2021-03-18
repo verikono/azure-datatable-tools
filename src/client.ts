@@ -591,7 +591,7 @@ export class AzureDataTablesClient {
             process.env[k['AZURE_STORAGE_ACCOUNT_KEY']]
         );
 
-        const url = `https:${process.env[k['AZURE_STORAGE_ACCOUNT']]}.table.core.windows.net`;
+        const url = `https://${process.env[k['AZURE_STORAGE_ACCOUNT']]}.table.core.windows.net`;
 
         switch(type) {
             case 'service':
