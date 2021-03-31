@@ -119,6 +119,18 @@ describe(`simple-datatables-framework`, function() {
 
         });
 
+        describe(`AzureDataTablesClient::tables`, () => {
+
+            it(`common use`, async () => {
+
+                const instance = new AzureDataTablesClient();
+                const result = await instance.tables();
+                assert(Array.isArray(result), 'expected an array');
+                assert(result.length, 'expected some table names');
+            });
+
+        });
+
         describe(`AzureDataTablesClient::exists`, () => {
 
             it(`common use`, async () => {

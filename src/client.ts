@@ -112,6 +112,22 @@ export class AzureDataTablesClient {
     }
 
     /**
+     * List all available tables
+     * 
+     * @returns Array - a list of tables found for this configured service client
+     */
+    async tables( props={} ):Promise<Array<string>> {
+
+        const client = this.service_client();
+        const tables = client.listTables();
+        let result = [];
+        for await (const table of tables) {
+            result.push(table.tableName)
+        }
+        return result;
+    }
+
+    /**
      * Check for the existence of a table
      * 
      * @param props the keyword argument object

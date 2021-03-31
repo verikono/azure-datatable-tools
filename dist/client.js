@@ -108,6 +108,33 @@ class AzureDataTablesClient {
         });
     }
     /**
+     * List all available tables
+     *
+     * @returns Array - a list of tables found for this configured service client
+     */
+    tables(props = {}) {
+        var e_1, _b;
+        return __awaiter(this, void 0, void 0, function* () {
+            const client = this.service_client();
+            const tables = client.listTables();
+            let result = [];
+            try {
+                for (var tables_1 = __asyncValues(tables), tables_1_1; tables_1_1 = yield tables_1.next(), !tables_1_1.done;) {
+                    const table = tables_1_1.value;
+                    result.push(table.tableName);
+                }
+            }
+            catch (e_1_1) { e_1 = { error: e_1_1 }; }
+            finally {
+                try {
+                    if (tables_1_1 && !tables_1_1.done && (_b = tables_1.return)) yield _b.call(tables_1);
+                }
+                finally { if (e_1) throw e_1.error; }
+            }
+            return result;
+        });
+    }
+    /**
      * Check for the existence of a table
      *
      * @param props the keyword argument object
@@ -115,7 +142,7 @@ class AzureDataTablesClient {
      * @returns true when the table exists
      */
     exists(props) {
-        var e_1, _b;
+        var e_2, _b;
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 const { table } = props;
@@ -124,18 +151,18 @@ class AzureDataTablesClient {
                 const client = this.service_client();
                 const tables = yield client.listTables();
                 try {
-                    for (var tables_1 = __asyncValues(tables), tables_1_1; tables_1_1 = yield tables_1.next(), !tables_1_1.done;) {
-                        const tbl = tables_1_1.value;
+                    for (var tables_2 = __asyncValues(tables), tables_2_1; tables_2_1 = yield tables_2.next(), !tables_2_1.done;) {
+                        const tbl = tables_2_1.value;
                         if (tbl.tableName === table)
                             return true;
                     }
                 }
-                catch (e_1_1) { e_1 = { error: e_1_1 }; }
+                catch (e_2_1) { e_2 = { error: e_2_1 }; }
                 finally {
                     try {
-                        if (tables_1_1 && !tables_1_1.done && (_b = tables_1.return)) yield _b.call(tables_1);
+                        if (tables_2_1 && !tables_2_1.done && (_b = tables_2.return)) yield _b.call(tables_2);
                     }
-                    finally { if (e_1) throw e_1.error; }
+                    finally { if (e_2) throw e_2.error; }
                 }
                 return false;
             }
@@ -176,7 +203,7 @@ class AzureDataTablesClient {
      * at times until it can make a tablename available for common use.
      */
     empty(props) {
-        var e_2, _b;
+        var e_3, _b;
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 const { table } = props;
@@ -199,12 +226,12 @@ class AzureDataTablesClient {
                         spool[entity.partitionKey].bins[currentBinIdx].push(entity);
                     }
                 }
-                catch (e_2_1) { e_2 = { error: e_2_1 }; }
+                catch (e_3_1) { e_3 = { error: e_3_1 }; }
                 finally {
                     try {
                         if (_d && !_d.done && (_b = _c.return)) yield _b.call(_c);
                     }
-                    finally { if (e_2) throw e_2.error; }
+                    finally { if (e_3) throw e_3.error; }
                 }
                 const batchStack = Object.keys(spool).reduce((acc, pk) => {
                     const batches = spool[pk].bins.map(bin => {
@@ -238,7 +265,7 @@ class AzureDataTablesClient {
      * @param props
      */
     rows(props) {
-        var e_3, _b;
+        var e_4, _b;
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 const { table, fields } = props;
@@ -254,12 +281,12 @@ class AzureDataTablesClient {
                         result.push(entity);
                     }
                 }
-                catch (e_3_1) { e_3 = { error: e_3_1 }; }
+                catch (e_4_1) { e_4 = { error: e_4_1 }; }
                 finally {
                     try {
                         if (_d && !_d.done && (_b = _c.return)) yield _b.call(_c);
                     }
-                    finally { if (e_3) throw e_3.error; }
+                    finally { if (e_4) throw e_4.error; }
                 }
                 return result;
             }
@@ -269,7 +296,7 @@ class AzureDataTablesClient {
         });
     }
     find(props) {
-        var e_4, _b;
+        var e_5, _b;
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 const { table, fn } = props;
@@ -282,12 +309,12 @@ class AzureDataTablesClient {
                         }
                     }
                 }
-                catch (e_4_1) { e_4 = { error: e_4_1 }; }
+                catch (e_5_1) { e_5 = { error: e_5_1 }; }
                 finally {
                     try {
                         if (_d && !_d.done && (_b = _c.return)) yield _b.call(_c);
                     }
-                    finally { if (e_4) throw e_4.error; }
+                    finally { if (e_5) throw e_5.error; }
                 }
                 return undefined;
             }
@@ -307,7 +334,7 @@ class AzureDataTablesClient {
      * @returns Promise<any> the reduced value
      */
     reduce(props) {
-        var e_5, _b;
+        var e_6, _b;
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 const { table, fn, initial } = props;
@@ -320,12 +347,12 @@ class AzureDataTablesClient {
                         acc = fn(acc, entity, cnt);
                     }
                 }
-                catch (e_5_1) { e_5 = { error: e_5_1 }; }
+                catch (e_6_1) { e_6 = { error: e_6_1 }; }
                 finally {
                     try {
                         if (_d && !_d.done && (_b = _c.return)) yield _b.call(_c);
                     }
-                    finally { if (e_5) throw e_5.error; }
+                    finally { if (e_6) throw e_6.error; }
                 }
                 return acc;
             }
@@ -344,7 +371,7 @@ class AzureDataTablesClient {
      * @returns
      */
     filter(props) {
-        var e_6, _b;
+        var e_7, _b;
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 const { table, fn } = props;
@@ -361,12 +388,12 @@ class AzureDataTablesClient {
                         cnt++;
                     }
                 }
-                catch (e_6_1) { e_6 = { error: e_6_1 }; }
+                catch (e_7_1) { e_7 = { error: e_7_1 }; }
                 finally {
                     try {
                         if (_d && !_d.done && (_b = _c.return)) yield _b.call(_c);
                     }
-                    finally { if (e_6) throw e_6.error; }
+                    finally { if (e_7) throw e_7.error; }
                 }
                 return result;
             }
