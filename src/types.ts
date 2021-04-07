@@ -29,7 +29,19 @@ export interface dropProps {
     table: string;
 }
 
+export interface createProps {
+    table: string;
+}
+
 export interface existsProps {
+    table: string;
+}
+
+export interface existsAndHasDataProps {
+    table: string;
+}
+
+export interface existsWithData {
     table: string;
 }
 
@@ -40,6 +52,10 @@ export interface rowsProps {
 }
 
 export interface emptyProps {
+    table: string;
+}
+
+export interface isEmptyProps {
     table: string;
 }
 

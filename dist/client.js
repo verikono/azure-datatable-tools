@@ -139,6 +139,7 @@ class AzureDataTablesClient {
      *
      * @param props the keyword argument object
      * @param props.table the table name
+     *
      * @returns true when the table exists
      */
     exists(props) {
@@ -168,6 +169,50 @@ class AzureDataTablesClient {
             }
             catch (err) {
                 throw Error(`AzureDataTablesClient::exists has failed - ${err.message}`);
+            }
+        });
+    }
+    /**
+     * Essentially a check for a valid data source.
+     *
+     * @param props the keyword argument object
+     * @param props.table String the table name
+     *
+     * @returns Promise resolving to boolean true if a table exists and is populated with at least one row.
+     */
+    existsAndHasData(props) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const exists = yield this.exists(props);
+                if (exists) {
+                    const empty = yield this.isEmpty(props);
+                    return !empty;
+                }
+                return false;
+            }
+            catch (err) {
+                throw Error(`AzureDataTablesClient::existsAndHasData has faileld - ${err.message}`);
+            }
+        });
+    }
+    /**
+     * create a table.
+     *
+     * @param props the keyword argument object
+     * @param props.table the table name
+     *
+     * @returns Promise resolving in a boolean. True being the table was successfully created.
+     */
+    create(props) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const { table } = props;
+                const client = this.service_client();
+                yield client.createTable(table);
+                return true;
+            }
+            catch (err) {
+                throw Error(`AzureDataTablesClient::drop has failed - ${err.message}`);
             }
         });
     }
@@ -252,6 +297,51 @@ class AzureDataTablesClient {
         });
     }
     /**
+     * Check to see if a table has zero rows (it's empty)
+     *
+     * @param props
+     * @param props.table String the name of the table
+     *
+     * @returns Promise resolving to a boolean which is true if the table has no rows.
+     */
+    isEmpty(props) {
+        var e_4, _b;
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const { table } = props;
+                if (!table || !table.length)
+                    throw Error(`invalid keyword "table" argued`);
+                const client = yield this.table_client({ table, create_table: false });
+                //be great if either the top or take parameters were available to limit us to retrieviing
+                //only 1 record as is the case with other languages.
+                const options = {
+                    queryOptions: {
+                        select: ['partitionKey']
+                    }
+                };
+                let result = true;
+                try {
+                    for (var _c = __asyncValues(client.listEntities(options)), _d; _d = yield _c.next(), !_d.done;) {
+                        const entity = _d.value;
+                        result = false;
+                        break;
+                    }
+                }
+                catch (e_4_1) { e_4 = { error: e_4_1 }; }
+                finally {
+                    try {
+                        if (_d && !_d.done && (_b = _c.return)) yield _b.call(_c);
+                    }
+                    finally { if (e_4) throw e_4.error; }
+                }
+                return result;
+            }
+            catch (err) {
+                throw Error(`AzureDataTablesClient::isEmpty has failed - ${err.message}`);
+            }
+        });
+    }
+    /**
      * Remove a row by Parition and Row Key
      */
     remove() {
@@ -265,7 +355,7 @@ class AzureDataTablesClient {
      * @param props
      */
     rows(props) {
-        var e_4, _b;
+        var e_5, _b;
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 const { table, fields } = props;
@@ -281,12 +371,12 @@ class AzureDataTablesClient {
                         result.push(entity);
                     }
                 }
-                catch (e_4_1) { e_4 = { error: e_4_1 }; }
+                catch (e_5_1) { e_5 = { error: e_5_1 }; }
                 finally {
                     try {
                         if (_d && !_d.done && (_b = _c.return)) yield _b.call(_c);
                     }
-                    finally { if (e_4) throw e_4.error; }
+                    finally { if (e_5) throw e_5.error; }
                 }
                 return result;
             }
@@ -295,8 +385,17 @@ class AzureDataTablesClient {
             }
         });
     }
+    /**
+     * Seek a single row in the table
+     *
+     * @param props Object the keyword argument object
+     * @param props.table String the table name
+     * @param props.fn Function the finder function
+     *
+     * @returns Promise<any> the resolved row or undefined if no row was found.
+     */
     find(props) {
-        var e_5, _b;
+        var e_6, _b;
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 const { table, fn } = props;
@@ -309,12 +408,12 @@ class AzureDataTablesClient {
                         }
                     }
                 }
-                catch (e_5_1) { e_5 = { error: e_5_1 }; }
+                catch (e_6_1) { e_6 = { error: e_6_1 }; }
                 finally {
                     try {
                         if (_d && !_d.done && (_b = _c.return)) yield _b.call(_c);
                     }
-                    finally { if (e_5) throw e_5.error; }
+                    finally { if (e_6) throw e_6.error; }
                 }
                 return undefined;
             }
@@ -334,7 +433,7 @@ class AzureDataTablesClient {
      * @returns Promise<any> the reduced value
      */
     reduce(props) {
-        var e_6, _b;
+        var e_7, _b;
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 const { table, fn, initial } = props;
@@ -347,12 +446,12 @@ class AzureDataTablesClient {
                         acc = fn(acc, entity, cnt);
                     }
                 }
-                catch (e_6_1) { e_6 = { error: e_6_1 }; }
+                catch (e_7_1) { e_7 = { error: e_7_1 }; }
                 finally {
                     try {
                         if (_d && !_d.done && (_b = _c.return)) yield _b.call(_c);
                     }
-                    finally { if (e_6) throw e_6.error; }
+                    finally { if (e_7) throw e_7.error; }
                 }
                 return acc;
             }
@@ -371,7 +470,7 @@ class AzureDataTablesClient {
      * @returns
      */
     filter(props) {
-        var e_7, _b;
+        var e_8, _b;
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 const { table, fn } = props;
@@ -388,12 +487,12 @@ class AzureDataTablesClient {
                         cnt++;
                     }
                 }
-                catch (e_7_1) { e_7 = { error: e_7_1 }; }
+                catch (e_8_1) { e_8 = { error: e_8_1 }; }
                 finally {
                     try {
                         if (_d && !_d.done && (_b = _c.return)) yield _b.call(_c);
                     }
-                    finally { if (e_7) throw e_7.error; }
+                    finally { if (e_8) throw e_8.error; }
                 }
                 return result;
             }

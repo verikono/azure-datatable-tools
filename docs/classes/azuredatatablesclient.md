@@ -19,13 +19,16 @@
 - [\_insertAsRecords](azuredatatablesclient.md#_insertasrecords)
 - [\_waitUntilTableSpaceReady](azuredatatablesclient.md#_waituntiltablespaceready)
 - [count](azuredatatablesclient.md#count)
+- [create](azuredatatablesclient.md#create)
 - [drop](azuredatatablesclient.md#drop)
 - [empty](azuredatatablesclient.md#empty)
 - [exists](azuredatatablesclient.md#exists)
+- [existsAndHasData](azuredatatablesclient.md#existsandhasdata)
 - [filter](azuredatatablesclient.md#filter)
 - [find](azuredatatablesclient.md#find)
 - [get\_authentication\_keys](azuredatatablesclient.md#get_authentication_keys)
 - [get\_configured\_keys](azuredatatablesclient.md#get_configured_keys)
+- [isEmpty](azuredatatablesclient.md#isempty)
 - [persist](azuredatatablesclient.md#persist)
 - [reduce](azuredatatablesclient.md#reduce)
 - [remove](azuredatatablesclient.md#remove)
@@ -49,7 +52,7 @@ Name | Type |
 
 **Returns:** [*AzureDataTablesClient*](azuredatatablesclient.md)
 
-Defined in: [client.ts:19](https://github.com/verikono/azure-datatable-tools/blob/d165a96/src/client.ts#L19)
+Defined in: [client.ts:19](https://github.com/verikono/azure-datatable-tools/blob/91a8acc/src/client.ts#L19)
 
 ## Properties
 
@@ -57,7 +60,7 @@ Defined in: [client.ts:19](https://github.com/verikono/azure-datatable-tools/blo
 
 • **authentication\_method**: *string*
 
-Defined in: [client.ts:18](https://github.com/verikono/azure-datatable-tools/blob/d165a96/src/client.ts#L18)
+Defined in: [client.ts:18](https://github.com/verikono/azure-datatable-tools/blob/91a8acc/src/client.ts#L18)
 
 ___
 
@@ -65,7 +68,7 @@ ___
 
 • **instance\_keys**: INSTANCE\_ENVIRONMENT\_VARIABLES
 
-Defined in: [client.ts:19](https://github.com/verikono/azure-datatable-tools/blob/d165a96/src/client.ts#L19)
+Defined in: [client.ts:19](https://github.com/verikono/azure-datatable-tools/blob/91a8acc/src/client.ts#L19)
 
 ## Methods
 
@@ -81,7 +84,7 @@ Name | Type |
 
 **Returns:** *TableServiceClient* \| *TableClient*
 
-Defined in: [client.ts:582](https://github.com/verikono/azure-datatable-tools/blob/d165a96/src/client.ts#L582)
+Defined in: [client.ts:682](https://github.com/verikono/azure-datatable-tools/blob/91a8acc/src/client.ts#L682)
 
 ___
 
@@ -97,7 +100,7 @@ Name | Type |
 
 **Returns:** *Promise*<any\>
 
-Defined in: [client.ts:494](https://github.com/verikono/azure-datatable-tools/blob/d165a96/src/client.ts#L494)
+Defined in: [client.ts:594](https://github.com/verikono/azure-datatable-tools/blob/91a8acc/src/client.ts#L594)
 
 ___
 
@@ -113,7 +116,7 @@ Name | Type |
 
 **Returns:** *void*
 
-Defined in: [client.ts:578](https://github.com/verikono/azure-datatable-tools/blob/d165a96/src/client.ts#L578)
+Defined in: [client.ts:678](https://github.com/verikono/azure-datatable-tools/blob/91a8acc/src/client.ts#L678)
 
 ___
 
@@ -133,7 +136,27 @@ Name | Type | Description |
 
 Promise<number> the number of rows
 
-Defined in: [client.ts:402](https://github.com/verikono/azure-datatable-tools/blob/d165a96/src/client.ts#L402)
+Defined in: [client.ts:502](https://github.com/verikono/azure-datatable-tools/blob/91a8acc/src/client.ts#L502)
+
+___
+
+### create
+
+▸ **create**(`props`: createProps): *Promise*<boolean\>
+
+create a table.
+
+#### Parameters:
+
+Name | Type | Description |
+:------ | :------ | :------ |
+`props` | createProps | the keyword argument object   |
+
+**Returns:** *Promise*<boolean\>
+
+Promise resolving in a boolean. True being the table was successfully created.
+
+Defined in: [client.ts:198](https://github.com/verikono/azure-datatable-tools/blob/91a8acc/src/client.ts#L198)
 
 ___
 
@@ -157,7 +180,7 @@ Name | Type | Description |
 
 Promise resolving true upon success.
 
-Defined in: [client.ts:177](https://github.com/verikono/azure-datatable-tools/blob/d165a96/src/client.ts#L177)
+Defined in: [client.ts:228](https://github.com/verikono/azure-datatable-tools/blob/91a8acc/src/client.ts#L228)
 
 ___
 
@@ -178,7 +201,7 @@ Name | Type |
 
 **Returns:** *Promise*<boolean\>
 
-Defined in: [client.ts:201](https://github.com/verikono/azure-datatable-tools/blob/d165a96/src/client.ts#L201)
+Defined in: [client.ts:252](https://github.com/verikono/azure-datatable-tools/blob/91a8acc/src/client.ts#L252)
 
 ___
 
@@ -198,7 +221,27 @@ Name | Type | Description |
 
 true when the table exists
 
-Defined in: [client.ts:137](https://github.com/verikono/azure-datatable-tools/blob/d165a96/src/client.ts#L137)
+Defined in: [client.ts:138](https://github.com/verikono/azure-datatable-tools/blob/91a8acc/src/client.ts#L138)
+
+___
+
+### existsAndHasData
+
+▸ **existsAndHasData**(`props`: existsAndHasDataProps): *Promise*<boolean\>
+
+Essentially a check for a valid data source.
+
+#### Parameters:
+
+Name | Type | Description |
+:------ | :------ | :------ |
+`props` | existsAndHasDataProps | the keyword argument object   |
+
+**Returns:** *Promise*<boolean\>
+
+Promise resolving to boolean true if a table exists and is populated with at least one row.
+
+Defined in: [client.ts:173](https://github.com/verikono/azure-datatable-tools/blob/91a8acc/src/client.ts#L173)
 
 ___
 
@@ -216,7 +259,7 @@ Name | Type | Description |
 
 **Returns:** *Promise*<any[]\>
 
-Defined in: [client.ts:365](https://github.com/verikono/azure-datatable-tools/blob/d165a96/src/client.ts#L365)
+Defined in: [client.ts:465](https://github.com/verikono/azure-datatable-tools/blob/91a8acc/src/client.ts#L465)
 
 ___
 
@@ -224,15 +267,19 @@ ___
 
 ▸ **find**(`props`: findProps): *Promise*<record\>
 
+Seek a single row in the table
+
 #### Parameters:
 
-Name | Type |
-:------ | :------ |
-`props` | findProps |
+Name | Type | Description |
+:------ | :------ | :------ |
+`props` | findProps | Object the keyword argument object   |
 
 **Returns:** *Promise*<record\>
 
-Defined in: [client.ts:295](https://github.com/verikono/azure-datatable-tools/blob/d165a96/src/client.ts#L295)
+Promise<any> the resolved row or undefined if no row was found.
+
+Defined in: [client.ts:395](https://github.com/verikono/azure-datatable-tools/blob/91a8acc/src/client.ts#L395)
 
 ___
 
@@ -249,7 +296,7 @@ Name | Type |
 `global_keys.AZURE_STORAGE_ACCOUNT_KEY` | *string* |
 `keys` | INSTANCE\_ENVIRONMENT\_VARIABLES |
 
-Defined in: [client.ts:636](https://github.com/verikono/azure-datatable-tools/blob/d165a96/src/client.ts#L636)
+Defined in: [client.ts:736](https://github.com/verikono/azure-datatable-tools/blob/91a8acc/src/client.ts#L736)
 
 ___
 
@@ -259,7 +306,27 @@ ___
 
 **Returns:** *any*
 
-Defined in: [client.ts:621](https://github.com/verikono/azure-datatable-tools/blob/d165a96/src/client.ts#L621)
+Defined in: [client.ts:721](https://github.com/verikono/azure-datatable-tools/blob/91a8acc/src/client.ts#L721)
+
+___
+
+### isEmpty
+
+▸ **isEmpty**(`props`: isEmptyProps): *Promise*<boolean\>
+
+Check to see if a table has zero rows (it's empty)
+
+#### Parameters:
+
+Name | Type |
+:------ | :------ |
+`props` | isEmptyProps |
+
+**Returns:** *Promise*<boolean\>
+
+Promise resolving to a boolean which is true if the table has no rows.
+
+Defined in: [client.ts:312](https://github.com/verikono/azure-datatable-tools/blob/91a8acc/src/client.ts#L312)
 
 ___
 
@@ -283,7 +350,7 @@ Name | Type |
 
 **Returns:** *Promise*<boolean\>
 
-Defined in: [client.ts:432](https://github.com/verikono/azure-datatable-tools/blob/d165a96/src/client.ts#L432)
+Defined in: [client.ts:532](https://github.com/verikono/azure-datatable-tools/blob/91a8acc/src/client.ts#L532)
 
 ___
 
@@ -303,7 +370,7 @@ Name | Type | Description |
 
 Promise<any> the reduced value
 
-Defined in: [client.ts:331](https://github.com/verikono/azure-datatable-tools/blob/d165a96/src/client.ts#L331)
+Defined in: [client.ts:431](https://github.com/verikono/azure-datatable-tools/blob/91a8acc/src/client.ts#L431)
 
 ___
 
@@ -315,7 +382,7 @@ Remove a row by Parition and Row Key
 
 **Returns:** *Promise*<void\>
 
-Defined in: [client.ts:257](https://github.com/verikono/azure-datatable-tools/blob/d165a96/src/client.ts#L257)
+Defined in: [client.ts:348](https://github.com/verikono/azure-datatable-tools/blob/91a8acc/src/client.ts#L348)
 
 ___
 
@@ -333,7 +400,7 @@ Name | Type |
 
 **Returns:** *Promise*<record[]\>
 
-Defined in: [client.ts:267](https://github.com/verikono/azure-datatable-tools/blob/d165a96/src/client.ts#L267)
+Defined in: [client.ts:358](https://github.com/verikono/azure-datatable-tools/blob/91a8acc/src/client.ts#L358)
 
 ___
 
@@ -343,7 +410,7 @@ ___
 
 **Returns:** *TableServiceClient*
 
-Defined in: [client.ts:45](https://github.com/verikono/azure-datatable-tools/blob/d165a96/src/client.ts#L45)
+Defined in: [client.ts:45](https://github.com/verikono/azure-datatable-tools/blob/91a8acc/src/client.ts#L45)
 
 ___
 
@@ -359,7 +426,7 @@ Name | Type |
 
 **Returns:** *Promise*<TableClient\>
 
-Defined in: [client.ts:60](https://github.com/verikono/azure-datatable-tools/blob/d165a96/src/client.ts#L60)
+Defined in: [client.ts:60](https://github.com/verikono/azure-datatable-tools/blob/91a8acc/src/client.ts#L60)
 
 ___
 
@@ -379,7 +446,7 @@ Name | Type |
 
 Array - a list of tables found for this configured service client
 
-Defined in: [client.ts:119](https://github.com/verikono/azure-datatable-tools/blob/d165a96/src/client.ts#L119)
+Defined in: [client.ts:119](https://github.com/verikono/azure-datatable-tools/blob/91a8acc/src/client.ts#L119)
 
 ___
 
@@ -389,4 +456,4 @@ ___
 
 **Returns:** *void*
 
-Defined in: [client.ts:632](https://github.com/verikono/azure-datatable-tools/blob/d165a96/src/client.ts#L632)
+Defined in: [client.ts:732](https://github.com/verikono/azure-datatable-tools/blob/91a8acc/src/client.ts#L732)

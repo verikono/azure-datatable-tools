@@ -133,17 +133,22 @@ describe(`simple-datatables-framework`, function() {
 
         describe(`AzureDataTablesClient::exists`, () => {
 
-            it(`common use`, async () => {
+            const table = 'testsExists';
 
-                const table = 'testsExists';
+            it(`returns false when a table does not exist`, async () => {
+
                 const instance = new AzureDataTablesClient();
                 const exists = await instance.exists({table});
                 assert(exists === false, `table ${table} should not exist`);
+            });
+
+            it(`returns true when a table does exist`, async () => {
+
+                const instance = new AzureDataTablesClient();
                 await instance.table_client({table});
                 const existsnow = await instance.exists({table});
                 assert(existsnow === true, 'method did not create a table');
                 await instance.drop({table});
-
             });
 
         });
@@ -259,11 +264,116 @@ describe(`simple-datatables-framework`, function() {
             it(`standard usage`);
         });
 
-        describe(`AzureDataTablesClient::drop`, () => {
+        describe(`AzureDataTablesClient::create`, () => {
 
+            it(`standard usage`, async () => {
+
+                const table = 'testCreate';
+                const instance = new AzureDataTablesClient();
+                const result = await instance.create({table});
+                assert(result === true, 'failed');
+                await instance.drop({table});
+            });
         });
 
+        describe(`AzureDataTablesClient::drop`, () => {
+            
+            it(`standard usage`, async () => {
 
+                const table = 'testDrop';
+                const instance = new AzureDataTablesClient();
+                await instance.create({table});
+                const result = await instance.drop({table});
+                assert(result === true, 'failed');
+            });
+        });
+
+        describe(`AzureDataTablesClient::isEmpty`, () => {
+
+            it(`returns true when an existing table is empty`, async () => {
+
+                const table = 'testIsEmpty1';
+                const instance = new AzureDataTablesClient();
+                await instance.create({table});
+                const result = await instance.isEmpty({table});
+                assert(result === true, 'failed');
+                await instance.drop({table});
+            });
+
+            it(`returns false when an existing table is not empty`, async () => {
+
+                const table = 'testIsEmpty2';
+                const instance = new AzureDataTablesClient();
+                await instance.create({table});
+                
+                const client = await instance.table_client({table});
+                await client.createEntity({partitionKey: 'p1', rowKey: 'r1', foo:"foo"});
+
+                const result = await instance.isEmpty({table});
+                assert(result === false, 'failed');
+                await instance.drop({table});
+            });
+
+            it(`errors when argued with a non-existent table`, async () => {
+
+                const table = 'notable';
+                const instance = new AzureDataTablesClient();
+
+                return new Promise( async (resolve, reject) => {
+
+                    try {
+                        const result = await instance.isEmpty({table});
+                        await instance.drop({table});
+                        reject('expected an error but did not get one');
+                    }
+                    catch( err ) {
+                        resolve(true);
+                    }
+                });
+
+            })
+        });
+
+        describe.only(`AzureDataTablesClient::existsAndHasData`, () => {
+
+            const table = 'existsAndHasDataTest';
+
+            it(`returns false when a table does not exist`, async () => {
+
+                const instance = new AzureDataTablesClient();
+                const result = await instance.existsAndHasData({table});
+                assert(result === false, 'failed');
+            });
+
+            it(`returns false when a table does exist but is empty`, async () => {
+
+                const instance = new AzureDataTablesClient();
+                await instance.create({table});
+                const result = await instance.existsAndHasData({table});
+                assert(result === false, 'failed');
+            });
+
+            it(`returns true when a table does exist and has data`, async () => {
+
+                const instance = new AzureDataTablesClient();
+                
+                //this sidesteps the fact we've probably run the test prior to this and azure
+                //has a really slow deletion queue for tables so it will error if we simply drop it.
+                const exists = await instance.exists({table});
+                if(!exists)
+                    await instance.create({table});
+
+                const client = await instance.table_client({table});
+                await client.createEntity({partitionKey:"p1", rowKey:"r1", foo:"foo"});
+
+                const result = await instance.existsAndHasData({table});
+                assert(result === true, 'failed');
+
+                await instance.drop({table});
+
+            });
+
+        });
 
     });
 

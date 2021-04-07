@@ -132,6 +132,7 @@ export class AzureDataTablesClient {
      * 
      * @param props the keyword argument object
      * @param props.table the table name 
+     * 
      * @returns true when the table exists
      */
     async exists( props:I.existsProps ):Promise<boolean> {
@@ -161,6 +162,56 @@ export class AzureDataTablesClient {
         }
     }
 
+    /**
+     * Essentially a check for a valid data source.
+     * 
+     * @param props the keyword argument object
+     * @param props.table String the table name
+     * 
+     * @returns Promise resolving to boolean true if a table exists and is populated with at least one row. 
+     */
+    async existsAndHasData( props:I.existsAndHasDataProps ):Promise<boolean> {
+
+        try {
+
+            const exists = await this.exists(props);
+            if(exists) {
+                const empty = await this.isEmpty(props);
+                return !empty;
+            }
+
+            return false
+        }
+        catch( err ) {
+            throw Error(`AzureDataTablesClient::existsAndHasData has faileld - ${err.message}`);
+        }
+    }
+
+    /**
+     * create a table.
+     * 
+     * @param props the keyword argument object
+     * @param props.table the table name
+     * 
+     * @returns Promise resolving in a boolean. True being the table was successfully created.
+     */
+    async create( props:I.createProps ):Promise<boolean> {
+
+        try {
+
+            const {
+                table
+            } = props;
+
+            const client:TableServiceClient = this.service_client();
+            await client.createTable(table);
+            return true;
+        }
+        catch( err ) {
+            throw Error(`AzureDataTablesClient::drop has failed - ${err.message}`);
+        }
+
+    }
 
     /**
      * Drop a table
@@ -246,10 +297,50 @@ export class AzureDataTablesClient {
         }
         catch( err ) {
 
-            throw Error(`AzureDataTablesClient::empty has failed - ${err.message}`)
+            throw Error(`AzureDataTablesClient::empty has failed - ${err.message}`);
         }
     }
 
+    /**
+     * Check to see if a table has zero rows (it's empty)
+     * 
+     * @param props
+     * @param props.table String the name of the table
+     *  
+     * @returns Promise resolving to a boolean which is true if the table has no rows. 
+     */
+    async isEmpty( props:I.isEmptyProps ):Promise<boolean> {
+
+        try {
+            const {
+                table
+            } = props;
+
+            if(!table || !table.length)
+                throw Error(`invalid keyword "table" argued`);
+
+            const client = await this.table_client({table, create_table:false});
+
+            //be great if either the top or take parameters were available to limit us to retrieviing
+            //only 1 record as is the case with other languages.
+            const options:ListTableEntitiesOptions = {
+                queryOptions:{
+                    select: ['partitionKey']
+                }
+            };
+
+            let result = true;
+            for await(const entity of client.listEntities(options)) {
+                result = false;
+                break;
+            }
+
+            return result;
+        }
+        catch( err ) {
+            throw Error(`AzureDataTablesClient::isEmpty has failed - ${err.message}`)
+        }
+    }
 
     /**
      * Remove a row by Parition and Row Key
@@ -292,6 +383,15 @@ export class AzureDataTablesClient {
         }
     }
 
+    /**
+     * Seek a single row in the table
+     * 
+     * @param props Object the keyword argument object
+     * @param props.table String the table name
+     * @param props.fn Function the finder function
+     *  
+     * @returns Promise<any> the resolved row or undefined if no row was found. 
+     */
     public async find( props:I.findProps ):Promise<I.record> {
 
         try {
