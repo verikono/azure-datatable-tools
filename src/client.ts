@@ -591,6 +591,64 @@ export class AzureDataTablesClient {
 
     }
 
+    /**
+     * Fetch rows from multiple tables when each table is expected to have updated/new rows.
+     * 
+     * Eg for argued tables ["shows2021", "showsJan", "showsFeb", "showsMar"] this method is useful if we wanted to load
+     * all the shows, then add/replace the shows with those in showsJan, then showsFeb etc.
+     * 
+     * The method uses the partitionKey and rowKey to determine if a row is a replacement. Order is non existent in Azure
+     * Storage Tables, so if an ordering function is not provided then the rows will return in a different order each invocation.
+     * 
+     * 
+     * @param props the keyword argument object
+     * @param props.tables Array a list of table names which will be read in left to right. ie table[2] > table[1] > table[0]
+     * @param props.sort Fn a sort function that is run once all data has been resolved
+     * 
+     * @returns 
+     */
+    public async accumulativeFetch ( props:I.accumulaltiveFetchProps ):Promise<I.record[]> {
+
+        try {
+            const {
+                tables,
+                sort
+            } = props;
+
+            const result = [];
+
+            let i = 0;
+
+            for( const table of tables ) {
+                const client = await this.table_client({table});
+                for await(const entity of client.listEntities()) {
+                    if(i === 0)
+                        result.push(entity);
+                    else {
+                        const replaceIdx = result.findIndex(row => row.partitionKey === entity.partitionKey && row.rowKey === entity.rowKey);
+                        if(replaceIdx === -1)
+                            result.push(entity);
+                        else
+                            result[replaceIdx] = entity;
+                    }
+                }
+                i++;
+            }
+
+            if(sort) {
+                if(typeof sort !== 'function')
+                    throw Error(`argument sort has been argued but a sort function`);
+
+                result.sort(sort);
+            }
+
+            return result;
+        }
+        catch( err ) {
+            throw Error(`AzureDataTablesClient::persist has failed - ${err.message}`);
+        }
+    }
+
     private async _insertAsRecords( props:I._insertAsRecordsProps ):Promise<any> {
 
         const {

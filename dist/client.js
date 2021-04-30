@@ -577,6 +577,66 @@ class AzureDataTablesClient {
             }
         });
     }
+    /**
+     * Fetch rows from multiple tables when each table is expected to have updated/new rows.
+     *
+     * Eg for argued tables ["shows2021", "showsJan", "showsFeb", "showsMar"] this method is useful if we wanted to load
+     * all the shows, then add/replace the shows with those in showsJan, then showsFeb etc.
+     *
+     * The method uses the partitionKey and rowKey to determine if a row is a replacement. Order is non existent in Azure
+     * Storage Tables, so if an ordering function is not provided then the rows will return in a different order each invocation.
+     *
+     *
+     * @param props the keyword argument object
+     * @param props.tables Array a list of table names which will be read in left to right. ie table[2] > table[1] > table[0]
+     * @param props.sort Fn a sort function that is run once all data has been resolved
+     *
+     * @returns
+     */
+    accumulativeFetch(props) {
+        var e_9, _b;
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const { tables, sort } = props;
+                const result = [];
+                let i = 0;
+                for (const table of tables) {
+                    const client = yield this.table_client({ table });
+                    try {
+                        for (var _c = (e_9 = void 0, __asyncValues(client.listEntities())), _d; _d = yield _c.next(), !_d.done;) {
+                            const entity = _d.value;
+                            if (i === 0)
+                                result.push(entity);
+                            else {
+                                const replaceIdx = result.findIndex(row => row.partitionKey === entity.partitionKey && row.rowKey === entity.rowKey);
+                                if (replaceIdx === -1)
+                                    result.push(entity);
+                                else
+                                    result[replaceIdx] = entity;
+                            }
+                        }
+                    }
+                    catch (e_9_1) { e_9 = { error: e_9_1 }; }
+                    finally {
+                        try {
+                            if (_d && !_d.done && (_b = _c.return)) yield _b.call(_c);
+                        }
+                        finally { if (e_9) throw e_9.error; }
+                    }
+                    i++;
+                }
+                if (sort) {
+                    if (typeof sort !== 'function')
+                        throw Error(`argument sort has been argued but a sort function`);
+                    result.sort(sort);
+                }
+                return result;
+            }
+            catch (err) {
+                throw Error(`AzureDataTablesClient::persist has failed - ${err.message}`);
+            }
+        });
+    }
     _insertAsRecords(props) {
         return __awaiter(this, void 0, void 0, function* () {
             const { table, data, partition, row, dropKeys } = props;

@@ -123,3 +123,8 @@ export interface dataSpoolBin {
     currentBinIdx: number
     bins: Array<Array<record>>
 }
+
+export interface accumulaltiveFetchProps {
+    tables: string[],
+    sort?: (a: any, b: any) => number
+}

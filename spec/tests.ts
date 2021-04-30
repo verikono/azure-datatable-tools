@@ -20,10 +20,11 @@ import * as I from '../src/types';
 
 import { mockData } from './mocks';
 
-describe(`simple-datatables-framework`, function() {
+describe(`simple-datatables-framework [tests peforming on account ${process.env.AZURE_STORAGE_ACCOUNT}]`, function() {
 
     //it can take some time for the azure queue to complete a task.
     this.timeout(60000);
+    let tableCnt = 0;
 
     describe.skip(`Azure queue recovery/mitigation tests`, () => {
 
@@ -334,7 +335,75 @@ describe(`simple-datatables-framework`, function() {
             })
         });
 
-        describe.only(`AzureDataTablesClient::existsAndHasData`, () => {
+        describe.only(`AzureDataTablesClient::accumulatedFetch`, () => {
+
+            it(`common usage`, async () => {
+
+                const table = 'testsAccumulatedFetch';
+                const tables = [];
+                const data1 = mockData(100);
+                const data2 = [
+                    Object.assign({}, JSON.parse(JSON.stringify(data1[7])), {col1:'d2set-change1'}),
+                    Object.assign({}, JSON.parse(JSON.stringify(data1[54])), {col1:'d2set-change2'}),
+                    { col1:"new row 1", myPK: '99', myRK: '1'}
+                ];
+
+                const data3 = [
+                    Object.assign({}, JSON.parse(JSON.stringify(data2[0])), {col1:'d3set-change1'}),
+                    Object.assign({}, JSON.parse(JSON.stringify(data1[33])), {col1:'d3set-change2'}),
+                ]
+
+                const instance = new AzureDataTablesClient();
+                await Promise.all(
+                    [data1, data2, data3].map((data, i) => {
+                        const tablename = `${table}${i+1}`;
+                        const promise = instance.persist({table:tablename, data, partition:"myPK", row:"myRK"})
+                        tables.push(tablename);
+                        return promise;
+                    })
+                );
+
+                const sorter = (a,b) => (
+                    parseFloat(a.partitionKey) > parseFloat(b.partitionKey) ? -1 : 1
+                );
+
+                const result = await instance.accumulativeFetch({tables, sort:sorter})
+
+                assert(
+                    result.length === data1.length + 1 //+1 for the new row
+                    , `expected ${data1.length+1} rows but got ${result.length}`
+                );
+                
+                //first change is actually not in the result - data2 applies change to data1 but then data3 applies a change to data2.
+                const change1 = result.find(row => row.col1 === 'd2set-change1');
+                assert(!change1, 'failed - change d2set-change1 of d1 should not exists - it gets overriden by the d3 set');
+
+                const change2 = result.find(row => row.col1 === 'd2set-change2')
+                const change2Index = result.findIndex(row => row.col1 === 'd2set-change2');
+                assert(!!change2, 'failed - change d2set-change2 should exist')
+
+                const change3 = result.find(row => row.col1 === 'd3set-change1')
+                const change3Index = result.findIndex(row => row.col1 === 'd3set-change1');
+                assert(!!change2, 'failed - change d3set-change1 should exist')
+
+                const change4 = result.find(row => row.col1 === 'd2set-change2')
+                const change4Index = result.findIndex(row => row.col1 === 'd2set-change2');
+                assert(!!change2, 'failed - change d3set-change2 should exist')
+
+                const addition1 = result.find(row => row.col1 === 'new row 1')
+                assert(!!addition1 , 'failed - addition 1 does not exist');
+
+                await Promise.all(
+                    [data1, data2, data3].map((_, i) => 
+                        instance.drop({table: `${table}${i+1}`})
+                    )
+                );
+
+
+            });
+        });
+
+        describe(`AzureDataTablesClient::existsAndHasData`, () => {
 
             const table = 'existsAndHasDataTest';
 
