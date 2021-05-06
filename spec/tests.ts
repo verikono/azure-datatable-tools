@@ -289,6 +289,72 @@ describe(`simple-datatables-framework [tests peforming on account ${process.env.
             });
         });
 
+        describe(`AzureDataTablesClient::map`, () => {
+
+            it(`common usage`, async () => {
+
+                const table = 'testMap';
+                const instance = new AzureDataTablesClient();
+
+                const data = mockData(100);
+                await instance.persist({table, data, partition:"myPK", row:"myRK"});
+
+                let lastI = null;
+                const mapper = (row, i) => {
+                    assert(i != lastI, `mappers incrementer is failing - sent already used value "${i}"`)
+                    row.myRK = '99';
+                    lastI = i;
+                    return row;
+                }
+
+                const result = await instance.map({table, fn:mapper});
+                await instance.drop({table});
+
+                assert(Array.isArray(result), 'expected an array');
+                assert(result.length === 100, 'expected 100 rows in the result');
+
+                result.forEach((row, i) => {
+                    assert(row.myRK === '99', `failed - row ${i} does not have the expected value of 99`);
+                });
+
+            });
+
+            it(`map and persist`, async () => {
+
+                const table = 'testMapPersist';
+                const instance = new AzureDataTablesClient();
+
+                const data = mockData(100);
+                await instance.persist({table, data, partition:"myPK", row:"myRK"});
+
+                const mapper = (row, i) => {
+                    row.myRK = `rku${i.toString()}`;
+                    return row;
+                }
+
+                const result = await instance.map({table, fn:mapper, persist: true, partition:"myPK", row:"myRK"});
+                const persisted = await instance.rows({table});
+                await instance.drop({table});
+
+                assert(Array.isArray(result), 'expected an array');
+                assert(result.length === 100, 'expected 100 rows in the result');
+
+                assert(Array.isArray(persisted), 'expected an array of rows persisted to the table');
+                assert(persisted.length === 100, 'expected 100 rows in the persisted rows');
+
+                result.forEach((row, i) => {
+                    assert(row.myRK.includes(`rku`), `failed - row ${i} does not have an expected value including rku`);
+                });
+
+                persisted.forEach((row, i) => {
+                    assert((row.myRK as string).includes(`rku`), `failed - row ${i} does not have an expected value including rku`);
+                    assert(row.myRK == row.rowKey, `failed - row ${i} myRK and rowKey should Match`);
+                    assert(row.myPK == row.partitionKey, `failed - row ${i} myPK and partitionKey should Match`);
+                });
+
+            })
+        });
+
         describe(`AzureDataTablesClient::isEmpty`, () => {
 
             it(`returns true when an existing table is empty`, async () => {
@@ -335,7 +401,7 @@ describe(`simple-datatables-framework [tests peforming on account ${process.env.
             })
         });
 
-        describe.only(`AzureDataTablesClient::accumulatedFetch`, () => {
+        describe(`AzureDataTablesClient::accumulatedFetch`, () => {
 
             it(`common usage`, async () => {
 

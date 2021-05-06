@@ -74,6 +74,14 @@ export interface countProps {
     table: string;
 }
 
+export interface mapProps {
+    table: string;
+    fn: Function;
+    persist?: boolean;
+    partition?: string;
+    row?: string;
+}
+
 export interface reduceProps {
     table: string;
     fn: Function;

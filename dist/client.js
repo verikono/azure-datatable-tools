@@ -502,6 +502,47 @@ class AzureDataTablesClient {
         });
     }
     /**
+     * Replace a table entirely with provided data.
+     *
+     * @param props
+     */
+    map(props) {
+        var e_9, _b;
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const { table, fn } = props;
+                let { persist, partition, row } = props;
+                persist = persist === undefined ? false : persist;
+                if (persist && (!partition || !row))
+                    throw Error(`when arguing persist TRUE, partition and row must also be provided`);
+                const client = yield this.table_client({ table });
+                const result = [];
+                let cnt = 0;
+                try {
+                    for (var _c = __asyncValues(client.listEntities()), _d; _d = yield _c.next(), !_d.done;) {
+                        const entity = _d.value;
+                        result.push(fn(entity, cnt));
+                        cnt++;
+                    }
+                }
+                catch (e_9_1) { e_9 = { error: e_9_1 }; }
+                finally {
+                    try {
+                        if (_d && !_d.done && (_b = _c.return)) yield _b.call(_c);
+                    }
+                    finally { if (e_9) throw e_9.error; }
+                }
+                yield Promise.all(result);
+                if (persist)
+                    yield this.persist({ table, data: result, partition, row });
+                return result;
+            }
+            catch (err) {
+                throw Error(`AzureDataTablesClient::replace has failed - ${err.message}`);
+            }
+        });
+    }
+    /**
      * Get the count of the rows.
      *
      * @param props Object the keyword argument object
@@ -523,7 +564,7 @@ class AzureDataTablesClient {
         });
     }
     /**
-     * Persist data to a table initially dropping/emptying the table if it exists leaving the table being a persisted
+     * Persist data to a table initially DROPPING/EMPTYING THE TABLE IF IT EXISTS leaving the table being a persisted
      * representation of the argued data.
      *
      * Performance concern:
@@ -531,7 +572,17 @@ class AzureDataTablesClient {
      * which occurs upon table deletion. If the datatable is quite large it may be more optimal to actually drop the table
      * and suffer the 30 second wait. IF that sounds like you, argue "forceDrop": true to the method keyword argument.
      *
-     * @param props
+     * @param props they keyword argument object
+     * @param props.table String the table being persisted to
+     * @param props.data Array<any> the data being persisted - an array of key/value objects
+     * @param props.partition String the key being used the Azure partitionKey
+     * @param props.row String the key in the data to use for the Azure rowKey
+     * @param props.datatype OPTIONAL STRING the type of data existing in props.data , right now the only possible value is 'records' which is also the default.
+     * @param props.dropKeys OPTIONAL Boolean when true the proped partition and row keys provided will existing only in partitionKey and rowKey and not both. Default false.
+     * @param props.forceDrop OPTIONAL Boolean DROP the table if it exists, rather than emptying it (which is far faster in Azure), default is false.
+     *
+     * @returns boolean TRUE on success
+     * @throws Error
      */
     persist(props) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -594,7 +645,7 @@ class AzureDataTablesClient {
      * @returns
      */
     accumulativeFetch(props) {
-        var e_9, _b;
+        var e_10, _b;
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 const { tables, sort } = props;
@@ -603,7 +654,7 @@ class AzureDataTablesClient {
                 for (const table of tables) {
                     const client = yield this.table_client({ table });
                     try {
-                        for (var _c = (e_9 = void 0, __asyncValues(client.listEntities())), _d; _d = yield _c.next(), !_d.done;) {
+                        for (var _c = (e_10 = void 0, __asyncValues(client.listEntities())), _d; _d = yield _c.next(), !_d.done;) {
                             const entity = _d.value;
                             if (i === 0)
                                 result.push(entity);
@@ -616,12 +667,12 @@ class AzureDataTablesClient {
                             }
                         }
                     }
-                    catch (e_9_1) { e_9 = { error: e_9_1 }; }
+                    catch (e_10_1) { e_10 = { error: e_10_1 }; }
                     finally {
                         try {
                             if (_d && !_d.done && (_b = _c.return)) yield _b.call(_c);
                         }
-                        finally { if (e_9) throw e_9.error; }
+                        finally { if (e_10) throw e_10.error; }
                     }
                     i++;
                 }
