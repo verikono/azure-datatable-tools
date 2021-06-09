@@ -69,6 +69,11 @@ class AzureDataTablesClient {
             throw Error(`AzureDataTablesClient::service_client has failed - ${err.message}`);
         }
     }
+    /**
+     *
+     * @param props
+     * @returns
+     */
     table_client(props) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
@@ -85,7 +90,8 @@ class AzureDataTablesClient {
                     default:
                         throw Error(`unknown authentication method ${this.authentication_method}`);
                 }
-                if (create_table && !(yield this.exists({ table }))) {
+                const exists = yield this.exists({ table });
+                if (create_table && !exists) {
                     try {
                         yield serviceclient.createTable(table);
                     }
@@ -100,6 +106,31 @@ class AzureDataTablesClient {
                         }
                     }
                 }
+                else if (exists) {
+                    return client;
+                }
+                else {
+                    throw new Error(`Cannot resolve a TableClient for table ${table} - to create this table argue create_table:true`);
+                }
+                let interval, cnt = 1;
+                yield new Promise((res, reject) => __awaiter(this, void 0, void 0, function* () {
+                    if (yield this.exists({ table }))
+                        return res(true);
+                    interval = setInterval(() => __awaiter(this, void 0, void 0, function* () {
+                        if (cnt >= 200)
+                            reject(`Attempted to recreate table ${table} 200 times - giving up.`);
+                        console.log(`Attempt recreation of table ${table} -- attempt ${cnt}`);
+                        yield serviceclient.createTable(table);
+                        const exists = yield this.exists({ table });
+                        if (exists) {
+                            clearInterval(interval);
+                            return res(true);
+                        }
+                        cnt++;
+                    }), 500);
+                }));
+                if (!(client instanceof data_tables_1.TableClient))
+                    throw new Error(`Cannot resolve a TableClient for table ${table} after numerous stratgies`);
                 return client;
             }
             catch (err) {
@@ -121,7 +152,7 @@ class AzureDataTablesClient {
             try {
                 for (var tables_1 = __asyncValues(tables), tables_1_1; tables_1_1 = yield tables_1.next(), !tables_1_1.done;) {
                     const table = tables_1_1.value;
-                    result.push(table.tableName);
+                    result.push(table.name);
                 }
             }
             catch (e_1_1) { e_1 = { error: e_1_1 }; }
@@ -154,7 +185,7 @@ class AzureDataTablesClient {
                 try {
                     for (var tables_2 = __asyncValues(tables), tables_2_1; tables_2_1 = yield tables_2.next(), !tables_2_1.done;) {
                         const tbl = tables_2_1.value;
-                        if (tbl.tableName === table)
+                        if (tbl.name === table)
                             return true;
                     }
                 }
@@ -256,6 +287,7 @@ class AzureDataTablesClient {
                     throw Error(`invalid keyword "table" argued`);
                 const client = yield this.table_client({ table });
                 let spool = {};
+                const result = yield client.listEntities();
                 try {
                     for (var _c = __asyncValues(yield client.listEntities()), _d; _d = yield _c.next(), !_d.done;) {
                         const entity = _d.value;
@@ -278,18 +310,27 @@ class AzureDataTablesClient {
                     }
                     finally { if (e_3) throw e_3.error; }
                 }
+                if (!Object.keys(spool).length)
+                    return;
                 const batchStack = Object.keys(spool).reduce((acc, pk) => {
                     const batches = spool[pk].bins.map(bin => {
-                        const batch = client.createBatch(pk);
-                        bin.forEach(entity => batch.deleteEntity(entity.partitionKey, entity.rowKey));
-                        return batch;
+                        const actions = [];
+                        bin.forEach(entity => actions.push(['delete', entity]));
+                        return actions;
                     });
                     acc = acc.concat(batches);
                     return acc;
                 }, []);
                 yield Promise.all(batchStack);
-                yield Promise.all(batchStack.map(exec => exec.submitBatch()));
-                return false;
+                for (let i = 0; i < batchStack.length; i++) {
+                    const client = yield this.table_client({ table });
+                    yield client.submitTransaction(batchStack[i]);
+                }
+                //await Promise.all(batchStack.map(actions => client.submitTransaction(actions)));
+                //await client.submitTransaction(actions);
+                //await Promise.all(batchStack.map(exec => exec.submitBatch()));
+                //await Promise.all(batchStack.map(exec => client.submitTransaction()));
+                return true;
             }
             catch (err) {
                 throw Error(`AzureDataTablesClient::empty has failed - ${err.message}`);
@@ -738,12 +779,28 @@ class AzureDataTablesClient {
             const batchStack = [];
             yield Promise.all(Object.keys(binned).reduce((stack, pk) => {
                 return stack.concat(binned[pk].bins.map((bin) => __awaiter(this, void 0, void 0, function* () {
-                    const batch = client.createBatch(pk);
-                    batchStack.push(batch);
-                    return batch.createEntities(bin);
+                    const actions = [];
+                    bin.map(itm => actions.push(['create', itm]));
+                    batchStack.push(actions);
+                    //const batch = client.createBatch(pk);
+                    //const batch = new TableTransaction();
+                    //batchStack.push(batch)
+                    //batchStack.push(actions);
+                    return;
+                    //return bin.map(itm => batch.createEntity(itm))
+                    //return batch.createEntities(bin);
                 })));
             }, []));
-            yield Promise.all(batchStack.map(batch => batch.submitBatch()));
+            for (let i = 0; i < batchStack.length; i++) {
+                const client = yield this.table_client({ table });
+                yield client.submitTransaction(batchStack[i]);
+            }
+            // await Promise.all(batchStack.map(batch => batch.submitTransaction()))
+            // await Promise.all(batchStack.map( async batch => {
+            //     batch = batch.map(bt => { bt[1].partitionKey = batch[0][1].partitionKey; return bt});
+            //     const result = await client.submitTransaction(batch);
+            //     return result;
+            // }));
             return true;
         });
     }

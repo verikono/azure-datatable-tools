@@ -1,6 +1,8 @@
 import {
     TableClient,
     TableServiceClient,
+    TableTransaction,
+    TransactionAction,
     TablesSharedKeyCredential,
     ListTableEntitiesOptions
 } from '@azure/data-tables';
@@ -57,6 +59,11 @@ export class AzureDataTablesClient {
         }
     }
 
+    /**
+     * 
+     * @param props 
+     * @returns 
+     */
     async table_client( props:I.tableClientProps ):Promise<TableClient> {
 
         try {
@@ -85,12 +92,12 @@ export class AzureDataTablesClient {
                     throw Error(`unknown authentication method ${this.authentication_method}`);
             }
 
-            if(create_table && !(await this.exists({table}))) {
+            const exists = await this.exists({table});
+
+            if(create_table && !exists) {
                 try {
                     await serviceclient.createTable(table);
-
                 } catch( err ) {
-
                     if(typeof err.message === 'string' && err.message.includes('TableBeingDeleted')) {
                         console.warn(`Table ${table} is currently queued for deletion, retry in 2 seconds`);
                         await new Promise(r => setTimeout(() => r(true), 2000));
@@ -101,9 +108,40 @@ export class AzureDataTablesClient {
                     }
                 }
             }
+            else if(exists) {
+                return client;
+            }
+            else {
+                throw new Error(`Cannot resolve a TableClient for table ${table} - to create this table argue create_table:true`);
+            }
+
+
+            let interval, cnt=1;
+            await new Promise(async (res, reject) => {
+
+                if(await this.exists({table}))
+                    return res(true);
+
+                interval = setInterval(async () => {
+                    if(cnt >= 200)
+                        reject(`Attempted to recreate table ${table} 200 times - giving up.`);
+
+                    console.log(`Attempt recreation of table ${table} -- attempt ${cnt}`)
+                    await serviceclient.createTable(table);
+                    const exists = await this.exists({table});
+                    if(exists) {
+                        clearInterval(interval);
+                        return res(true);
+                    }
+                    cnt++;
+                }, 500);
+
+            });
+
+            if(!(client instanceof TableClient))
+                throw new Error(`Cannot resolve a TableClient for table ${table} after numerous stratgies`);
 
             return client;
-
         }
         catch( err ) {
 
@@ -122,7 +160,7 @@ export class AzureDataTablesClient {
         const tables = client.listTables();
         let result = [];
         for await (const table of tables) {
-            result.push(table.tableName)
+            result.push(table.name)
         }
         return result;
     }
@@ -152,7 +190,7 @@ export class AzureDataTablesClient {
 
             const tables = await client.listTables();
             for await (const tbl of tables) {
-                if(tbl.tableName === table)
+                if(tbl.name === table)
                     return true;
             }
             return false;
@@ -263,6 +301,8 @@ export class AzureDataTablesClient {
 
             let spool = {}
 
+            const result = await client.listEntities();
+
             for await (const entity of await client.listEntities()) {
 
                 if(!spool.hasOwnProperty(entity.partitionKey)){
@@ -279,21 +319,32 @@ export class AzureDataTablesClient {
 
             }
 
+            if(!Object.keys(spool).length)
+                return;
+            
+
             const batchStack = Object.keys(spool).reduce((acc, pk) => {
                 const batches = spool[pk].bins.map(bin => {
-                    const batch = client.createBatch(pk);
-                    bin.forEach(entity => batch.deleteEntity(entity.partitionKey, entity.rowKey));
-                    return batch;
+                    const actions:TransactionAction[] = [];
+                    bin.forEach(entity => actions.push(['delete', entity]))
+                    return actions;
                 });
                 acc = acc.concat(batches);
                 return acc;
             }, []);
 
             await Promise.all(batchStack);
-            
-            await Promise.all(batchStack.map(exec => exec.submitBatch()));
+            for(let i=0; i<batchStack.length; i++) {
+                const client = await this.table_client({table});
+                await client.submitTransaction(batchStack[i]);
+            }
 
-            return false;
+            //await Promise.all(batchStack.map(actions => client.submitTransaction(actions)));
+            //await client.submitTransaction(actions);
+            //await Promise.all(batchStack.map(exec => exec.submitBatch()));
+            //await Promise.all(batchStack.map(exec => client.submitTransaction()));
+
+            return true;
         }
         catch( err ) {
 
@@ -392,7 +443,7 @@ export class AzureDataTablesClient {
      *  
      * @returns Promise<any> the resolved row or undefined if no row was found. 
      */
-    public async find( props:I.findProps ):Promise<I.record> {
+    public async find( props:I.findProps ):Promise<any> {
 
         try {
 
@@ -771,18 +822,35 @@ export class AzureDataTablesClient {
         }, {});
 
         const client = await this.table_client({table});
-
+        
         const batchStack = [];
         await Promise.all(Object.keys(binned).reduce<any>((stack, pk) => {
             return stack.concat(binned[pk].bins.map(async bin => {
-                const batch = client.createBatch(pk);
-                batchStack.push(batch)
-                return batch.createEntities(bin);
+                const actions:TransactionAction[] = [];
+                bin.map(itm => actions.push(['create', itm]));
+                batchStack.push(actions);
+
+                //const batch = client.createBatch(pk);
+                //const batch = new TableTransaction();
+                //batchStack.push(batch)
+                //batchStack.push(actions);
+                return 
+                //return bin.map(itm => batch.createEntity(itm))
+                //return batch.createEntities(bin);
             }))
         }, []))
 
-        await Promise.all(batchStack.map(batch => batch.submitBatch()))
+        for(let i=0; i<batchStack.length; i++) {
+            const client = await this.table_client({table});
+            await client.submitTransaction(batchStack[i]);
+        }
 
+        // await Promise.all(batchStack.map(batch => batch.submitTransaction()))
+        // await Promise.all(batchStack.map( async batch => {
+        //     batch = batch.map(bt => { bt[1].partitionKey = batch[0][1].partitionKey; return bt});
+        //     const result = await client.submitTransaction(batch);
+        //     return result;
+        // }));
         return true;
     }
 
