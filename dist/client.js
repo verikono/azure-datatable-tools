@@ -18,22 +18,6 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-var __asyncValues = (this && this.__asyncValues) || function (o) {
-    if (!Symbol.asyncIterator) throw new TypeError("Symbol.asyncIterator is not defined.");
-    var m = o[Symbol.asyncIterator], i;
-    return m ? m.call(o) : (o = typeof __values === "function" ? __values(o) : o[Symbol.iterator](), i = {}, verb("next"), verb("throw"), verb("return"), i[Symbol.asyncIterator] = function () { return this; }, i);
-    function verb(n) { i[n] = o[n] && function (v) { return new Promise(function (resolve, reject) { v = o[n](v), settle(resolve, reject, v.done, v.value); }); }; }
-    function settle(resolve, reject, d, v) { Promise.resolve(v).then(function(v) { resolve({ value: v, done: d }); }, reject); }
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AzureDataTablesClient = void 0;
 const data_tables_1 = require("@azure/data-tables");
@@ -74,96 +58,81 @@ class AzureDataTablesClient {
      * @param props
      * @returns
      */
-    table_client(props) {
-        return __awaiter(this, void 0, void 0, function* () {
-            try {
-                const { table } = props;
-                let { create_table } = props;
-                let client;
-                let serviceclient;
-                create_table = create_table === undefined ? true : create_table;
-                switch (this.authentication_method) {
-                    case 'sharedKeyCredential':
-                        serviceclient = this._clientBySharedKeyCredential({ type: 'service' });
-                        client = this._clientBySharedKeyCredential({ type: 'table', table });
-                        break;
-                    default:
-                        throw Error(`unknown authentication method ${this.authentication_method}`);
+    async table_client(props) {
+        try {
+            const { table } = props;
+            let { create_table } = props;
+            let client;
+            let serviceclient;
+            create_table = create_table === undefined ? true : create_table;
+            switch (this.authentication_method) {
+                case 'sharedKeyCredential':
+                    serviceclient = this._clientBySharedKeyCredential({ type: 'service' });
+                    client = this._clientBySharedKeyCredential({ type: 'table', table });
+                    break;
+                default:
+                    throw Error(`unknown authentication method ${this.authentication_method}`);
+            }
+            const exists = await this.exists({ table });
+            if (create_table && !exists) {
+                try {
+                    await serviceclient.createTable(table);
                 }
-                const exists = yield this.exists({ table });
-                if (create_table && !exists) {
-                    try {
-                        yield serviceclient.createTable(table);
+                catch (err) {
+                    if (typeof err.message === 'string' && err.message.includes('TableBeingDeleted')) {
+                        console.warn(`Table ${table} is currently queued for deletion, retry in 2 seconds`);
+                        await new Promise(r => setTimeout(() => r(true), 2000));
+                        client = await this.table_client(props);
                     }
-                    catch (err) {
-                        if (typeof err.message === 'string' && err.message.includes('TableBeingDeleted')) {
-                            console.warn(`Table ${table} is currently queued for deletion, retry in 2 seconds`);
-                            yield new Promise(r => setTimeout(() => r(true), 2000));
-                            client = yield this.table_client(props);
-                        }
-                        else {
-                            throw err;
-                        }
+                    else {
+                        throw err;
                     }
                 }
-                else if (exists) {
-                    return client;
-                }
-                else {
-                    throw new Error(`Cannot resolve a TableClient for table ${table} - to create this table argue create_table:true`);
-                }
-                let interval, cnt = 1;
-                yield new Promise((res, reject) => __awaiter(this, void 0, void 0, function* () {
-                    if (yield this.exists({ table }))
-                        return res(true);
-                    interval = setInterval(() => __awaiter(this, void 0, void 0, function* () {
-                        if (cnt >= 200)
-                            reject(`Attempted to recreate table ${table} 200 times - giving up.`);
-                        console.log(`Attempt recreation of table ${table} -- attempt ${cnt}`);
-                        yield serviceclient.createTable(table);
-                        const exists = yield this.exists({ table });
-                        if (exists) {
-                            clearInterval(interval);
-                            return res(true);
-                        }
-                        cnt++;
-                    }), 500);
-                }));
-                if (!(client instanceof data_tables_1.TableClient))
-                    throw new Error(`Cannot resolve a TableClient for table ${table} after numerous stratgies`);
+            }
+            else if (exists) {
                 return client;
             }
-            catch (err) {
-                throw Error(`AzureDataTablesClient::table_client has failed - ${err.message}`);
+            else {
+                throw new Error(`Cannot resolve a TableClient for table ${table} - to create this table argue create_table:true`);
             }
-        });
+            let interval, cnt = 1;
+            await new Promise(async (res, reject) => {
+                if (await this.exists({ table }))
+                    return res(true);
+                interval = setInterval(async () => {
+                    if (cnt >= 200)
+                        reject(`Attempted to recreate table ${table} 200 times - giving up.`);
+                    console.log(`Attempt recreation of table ${table} -- attempt ${cnt}`);
+                    await serviceclient.createTable(table);
+                    const exists = await this.exists({ table });
+                    if (exists) {
+                        clearInterval(interval);
+                        return res(true);
+                    }
+                    cnt++;
+                }, 500);
+            });
+            if (!(client instanceof data_tables_1.TableClient))
+                throw new Error(`Cannot resolve a TableClient for table ${table} after numerous stratgies`);
+            return client;
+        }
+        catch (err) {
+            throw Error(`AzureDataTablesClient::table_client has failed - ${err.message}`);
+        }
     }
     /**
      * List all available tables
      *
      * @returns Array - a list of tables found for this configured service client
      */
-    tables(props = {}) {
-        var e_1, _b;
-        return __awaiter(this, void 0, void 0, function* () {
-            const client = this.service_client();
-            const tables = client.listTables();
-            let result = [];
-            try {
-                for (var tables_1 = __asyncValues(tables), tables_1_1; tables_1_1 = yield tables_1.next(), !tables_1_1.done;) {
-                    const table = tables_1_1.value;
-                    result.push(table.name);
-                }
-            }
-            catch (e_1_1) { e_1 = { error: e_1_1 }; }
-            finally {
-                try {
-                    if (tables_1_1 && !tables_1_1.done && (_b = tables_1.return)) yield _b.call(tables_1);
-                }
-                finally { if (e_1) throw e_1.error; }
-            }
-            return result;
-        });
+    async tables(props = {}) {
+        const client = this.service_client();
+        const tables = client.listTables();
+        let result = [];
+        for await (const table of tables) {
+            result.push(table.name);
+        }
+        return result;
     }
     /**
      * Check for the existence of a table
@@ -173,35 +142,22 @@ class AzureDataTablesClient {
      *
      * @returns true when the table exists
      */
-    exists(props) {
-        var e_2, _b;
-        return __awaiter(this, void 0, void 0, function* () {
-            try {
-                const { table } = props;
-                if (!table || !table.length)
-                    throw Error('invalid table argued');
-                const client = this.service_client();
-                const tables = yield client.listTables();
-                try {
-                    for (var tables_2 = __asyncValues(tables), tables_2_1; tables_2_1 = yield tables_2.next(), !tables_2_1.done;) {
-                        const tbl = tables_2_1.value;
-                        if (tbl.name === table)
-                            return true;
-                    }
-                }
-                catch (e_2_1) { e_2 = { error: e_2_1 }; }
-                finally {
-                    try {
-                        if (tables_2_1 && !tables_2_1.done && (_b = tables_2.return)) yield _b.call(tables_2);
-                    }
-                    finally { if (e_2) throw e_2.error; }
-                }
-                return false;
+    async exists(props) {
+        try {
+            const { table } = props;
+            if (!table || !table.length)
+                throw Error('invalid table argued');
+            const client = this.service_client();
+            const tables = await client.listTables();
+            for await (const tbl of tables) {
+                if (tbl.name === table)
+                    return true;
             }
-            catch (err) {
-                throw Error(`AzureDataTablesClient::exists has failed - ${err.message}`);
-            }
-        });
+            return false;
+        }
+        catch (err) {
+            throw Error(`AzureDataTablesClient::exists has failed - ${err.message}`);
+        }
     }
     /**
      * Essentially a check for a valid data source.
@@ -211,20 +167,18 @@ class AzureDataTablesClient {
      *
      * @returns Promise resolving to boolean true if a table exists and is populated with at least one row.
      */
-    existsAndHasData(props) {
-        return __awaiter(this, void 0, void 0, function* () {
-            try {
-                const exists = yield this.exists(props);
-                if (exists) {
-                    const empty = yield this.isEmpty(props);
-                    return !empty;
-                }
-                return false;
+    async existsAndHasData(props) {
+        try {
+            const exists = await this.exists(props);
+            if (exists) {
+                const empty = await this.isEmpty(props);
+                return !empty;
             }
-            catch (err) {
-                throw Error(`AzureDataTablesClient::existsAndHasData has faileld - ${err.message}`);
-            }
-        });
+            return false;
+        }
+        catch (err) {
+            throw Error(`AzureDataTablesClient::existsAndHasData has faileld - ${err.message}`);
+        }
     }
     /**
      * create a table.
@@ -234,18 +188,16 @@ class AzureDataTablesClient {
      *
      * @returns Promise resolving in a boolean. True being the table was successfully created.
      */
-    create(props) {
-        return __awaiter(this, void 0, void 0, function* () {
-            try {
-                const { table } = props;
-                const client = this.service_client();
-                yield client.createTable(table);
-                return true;
-            }
-            catch (err) {
-                throw Error(`AzureDataTablesClient::drop has failed - ${err.message}`);
-            }
-        });
+    async create(props) {
+        try {
+            const { table } = props;
+            const client = this.service_client();
+            await client.createTable(table);
+            return true;
+        }
+        catch (err) {
+            throw Error(`AzureDataTablesClient::drop has failed - ${err.message}`);
+        }
     }
     /**
      * Drop a table
@@ -259,18 +211,16 @@ class AzureDataTablesClient {
      *
      * @returns Promise resolving true upon success.
      */
-    drop(props) {
-        return __awaiter(this, void 0, void 0, function* () {
-            try {
-                const { table } = props;
-                const client = this.service_client();
-                yield client.deleteTable(table);
-                return true;
-            }
-            catch (err) {
-                throw Error(`AzureDataTablesClient::drop has failed - ${err.message}`);
-            }
-        });
+    async drop(props) {
+        try {
+            const { table } = props;
+            const client = this.service_client();
+            await client.deleteTable(table);
+            return true;
+        }
+        catch (err) {
+            throw Error(`AzureDataTablesClient::drop has failed - ${err.message}`);
+        }
     }
     /**
      * Empty a table
@@ -278,64 +228,51 @@ class AzureDataTablesClient {
      * This method can be useful when replacing a table entirely due to Azure's operation queue taking upwards of 45 seconds
      * at times until it can make a tablename available for common use.
      */
-    empty(props) {
-        var e_3, _b;
-        return __awaiter(this, void 0, void 0, function* () {
-            try {
-                const { table } = props;
-                if (!table || !table.length)
-                    throw Error(`invalid keyword "table" argued`);
-                const client = yield this.table_client({ table });
-                let spool = {};
-                const result = yield client.listEntities();
-                try {
-                    for (var _c = __asyncValues(yield client.listEntities()), _d; _d = yield _c.next(), !_d.done;) {
-                        const entity = _d.value;
-                        if (!spool.hasOwnProperty(entity.partitionKey)) {
-                            spool[entity.partitionKey] = { currentBinIdx: 0, bins: [[]] };
-                        }
-                        let currentBinIdx = spool[entity.partitionKey].currentBinIdx;
-                        if (spool[entity.partitionKey].bins[currentBinIdx].length > 99) {
-                            spool[entity.partitionKey].currentBinIdx++;
-                            currentBinIdx = spool[entity.partitionKey].currentBinIdx;
-                            spool[entity.partitionKey].bins.push([]);
-                        }
-                        spool[entity.partitionKey].bins[currentBinIdx].push(entity);
-                    }
+    async empty(props) {
+        try {
+            const { table } = props;
+            if (!table || !table.length)
+                throw Error(`invalid keyword "table" argued`);
+            const client = await this.table_client({ table });
+            let spool = {};
+            const result = await client.listEntities();
+            for await (const entity of await client.listEntities()) {
+                if (!spool.hasOwnProperty(entity.partitionKey)) {
+                    spool[entity.partitionKey] = { currentBinIdx: 0, bins: [[]] };
                 }
-                catch (e_3_1) { e_3 = { error: e_3_1 }; }
-                finally {
-                    try {
-                        if (_d && !_d.done && (_b = _c.return)) yield _b.call(_c);
-                    }
-                    finally { if (e_3) throw e_3.error; }
+                let currentBinIdx = spool[entity.partitionKey].currentBinIdx;
+                if (spool[entity.partitionKey].bins[currentBinIdx].length > 99) {
+                    spool[entity.partitionKey].currentBinIdx++;
+                    currentBinIdx = spool[entity.partitionKey].currentBinIdx;
+                    spool[entity.partitionKey].bins.push([]);
                 }
-                if (!Object.keys(spool).length)
-                    return;
-                const batchStack = Object.keys(spool).reduce((acc, pk) => {
-                    const batches = spool[pk].bins.map(bin => {
-                        const actions = [];
-                        bin.forEach(entity => actions.push(['delete', entity]));
-                        return actions;
-                    });
-                    acc = acc.concat(batches);
-                    return acc;
-                }, []);
-                yield Promise.all(batchStack);
-                for (let i = 0; i < batchStack.length; i++) {
-                    const client = yield this.table_client({ table });
-                    yield client.submitTransaction(batchStack[i]);
-                }
-                //await Promise.all(batchStack.map(actions => client.submitTransaction(actions)));
-                //await client.submitTransaction(actions);
-                //await Promise.all(batchStack.map(exec => exec.submitBatch()));
-                //await Promise.all(batchStack.map(exec => client.submitTransaction()));
-                return true;
+                spool[entity.partitionKey].bins[currentBinIdx].push(entity);
             }
-            catch (err) {
-                throw Error(`AzureDataTablesClient::empty has failed - ${err.message}`);
+            if (!Object.keys(spool).length)
+                return;
+            const batchStack = Object.keys(spool).reduce((acc, pk) => {
+                const batches = spool[pk].bins.map(bin => {
+                    const actions = [];
+                    bin.forEach(entity => actions.push(['delete', entity]));
+                    return actions;
+                });
+                acc = acc.concat(batches);
+                return acc;
+            }, []);
+            await Promise.all(batchStack);
+            for (let i = 0; i < batchStack.length; i++) {
+                const client = await this.table_client({ table });
+                await client.submitTransaction(batchStack[i]);
             }
-        });
+            //await Promise.all(batchStack.map(actions => client.submitTransaction(actions)));
+            //await client.submitTransaction(actions);
+            //await Promise.all(batchStack.map(exec => exec.submitBatch()));
+            //await Promise.all(batchStack.map(exec => client.submitTransaction()));
+            return true;
+        }
+        catch (err) {
+            throw Error(`AzureDataTablesClient::empty has failed - ${err.message}`);
+        }
     }
     /**
      * Check to see if a table has zero rows (it's empty)
@@ -345,86 +282,58 @@ class AzureDataTablesClient {
      *
      * @returns Promise resolving to a boolean which is true if the table has no rows.
      */
-    isEmpty(props) {
-        var e_4, _b;
-        return __awaiter(this, void 0, void 0, function* () {
-            try {
-                const { table } = props;
-                if (!table || !table.length)
-                    throw Error(`invalid keyword "table" argued`);
-                const client = yield this.table_client({ table, create_table: false });
-                //be great if either the top or take parameters were available to limit us to retrieviing
-                //only 1 record as is the case with other languages.
-                const options = {
-                    queryOptions: {
-                        select: ['partitionKey']
-                    }
-                };
-                let result = true;
-                try {
-                    for (var _c = __asyncValues(client.listEntities(options)), _d; _d = yield _c.next(), !_d.done;) {
-                        const entity = _d.value;
-                        result = false;
-                        break;
-                    }
+    async isEmpty(props) {
+        try {
+            const { table } = props;
+            if (!table || !table.length)
+                throw Error(`invalid keyword "table" argued`);
+            const client = await this.table_client({ table, create_table: false });
+            //be great if either the top or take parameters were available to limit us to retrieviing
+            //only 1 record as is the case with other languages.
+            const options = {
+                queryOptions: {
+                    select: ['partitionKey']
                 }
-                catch (e_4_1) { e_4 = { error: e_4_1 }; }
-                finally {
-                    try {
-                        if (_d && !_d.done && (_b = _c.return)) yield _b.call(_c);
-                    }
-                    finally { if (e_4) throw e_4.error; }
-                }
-                return result;
+            };
+            let result = true;
+            for await (const entity of client.listEntities(options)) {
+                result = false;
+                break;
             }
-            catch (err) {
-                throw Error(`AzureDataTablesClient::isEmpty has failed - ${err.message}`);
-            }
-        });
+            return result;
+        }
+        catch (err) {
+            throw Error(`AzureDataTablesClient::isEmpty has failed - ${err.message}`);
+        }
     }
     /**
      * Remove a row by Parition and Row Key
      */
-    remove() {
-        return __awaiter(this, void 0, void 0, function* () {
-            throw Error(`AzureDataTablesClient::remove is unimplemented`);
-        });
+    async remove() {
+        throw Error(`AzureDataTablesClient::remove is unimplemented`);
     }
     /**
      * Gather rows
      *
      * @param props
      */
-    rows(props) {
-        var e_5, _b;
-        return __awaiter(this, void 0, void 0, function* () {
-            try {
-                const { table, fields } = props;
-                const client = yield this.table_client({ table });
-                const options = { queryOptions: {} };
-                if (Array.isArray(fields) && fields.length) {
-                    options.queryOptions.select = fields;
-                }
-                const result = [];
-                try {
-                    for (var _c = __asyncValues(client.listEntities(options)), _d; _d = yield _c.next(), !_d.done;) {
-                        const entity = _d.value;
-                        result.push(entity);
-                    }
-                }
-                catch (e_5_1) { e_5 = { error: e_5_1 }; }
-                finally {
-                    try {
-                        if (_d && !_d.done && (_b = _c.return)) yield _b.call(_c);
-                    }
-                    finally { if (e_5) throw e_5.error; }
-                }
-                return result;
+    async rows(props) {
+        try {
+            const { table, fields } = props;
+            const client = await this.table_client({ table });
+            const options = { queryOptions: {} };
+            if (Array.isArray(fields) && fields.length) {
+                options.queryOptions.select = fields;
             }
-            catch (err) {
-                throw Error(`AzureDataTablesClient::rows has failed - ${err.message}`);
+            const result = [];
+            for await (const entity of client.listEntities(options)) {
+                result.push(entity);
             }
-        });
+            return result;
+        }
+        catch (err) {
+            throw Error(`AzureDataTablesClient::rows has failed - ${err.message}`);
+        }
     }
     /**
      * Seek a single row in the table
@@ -435,33 +344,20 @@ class AzureDataTablesClient {
      *
      * @returns Promise<any> the resolved row or undefined if no row was found.
      */
-    find(props) {
-        var e_6, _b;
-        return __awaiter(this, void 0, void 0, function* () {
-            try {
-                const { table, fn } = props;
-                const client = yield this.table_client({ table });
-                try {
-                    for (var _c = __asyncValues(client.listEntities()), _d; _d = yield _c.next(), !_d.done;) {
-                        const entity = _d.value;
-                        if (fn(entity)) {
-                            return entity;
-                        }
-                    }
+    async find(props) {
+        try {
+            const { table, fn } = props;
+            const client = await this.table_client({ table });
+            for await (const entity of client.listEntities()) {
+                if (fn(entity)) {
+                    return entity;
                 }
-                catch (e_6_1) { e_6 = { error: e_6_1 }; }
-                finally {
-                    try {
-                        if (_d && !_d.done && (_b = _c.return)) yield _b.call(_c);
-                    }
-                    finally { if (e_6) throw e_6.error; }
-                }
-                return undefined;
             }
-            catch (err) {
-                throw Error(`AzureDataTablesClient::find failed - ${err.message}`);
-            }
-        });
+            return undefined;
+        }
+        catch (err) {
+            throw Error(`AzureDataTablesClient::find failed - ${err.message}`);
+        }
     }
     /**
      * Reduce on rows.
@@ -473,33 +369,20 @@ class AzureDataTablesClient {
      *
      * @returns Promise<any> the reduced value
      */
-    reduce(props) {
-        var e_7, _b;
-        return __awaiter(this, void 0, void 0, function* () {
-            try {
-                const { table, fn, initial } = props;
-                let acc = JSON.parse(JSON.stringify(initial));
-                const client = yield this.table_client({ table });
-                let cnt = 0;
-                try {
-                    for (var _c = __asyncValues(client.listEntities()), _d; _d = yield _c.next(), !_d.done;) {
-                        const entity = _d.value;
-                        acc = fn(acc, entity, cnt);
-                    }
-                }
-                catch (e_7_1) { e_7 = { error: e_7_1 }; }
-                finally {
-                    try {
-                        if (_d && !_d.done && (_b = _c.return)) yield _b.call(_c);
-                    }
-                    finally { if (e_7) throw e_7.error; }
-                }
-                return acc;
+    async reduce(props) {
+        try {
+            const { table, fn, initial } = props;
+            let acc = JSON.parse(JSON.stringify(initial));
+            const client = await this.table_client({ table });
+            let cnt = 0;
+            for await (const entity of client.listEntities()) {
+                acc = fn(acc, entity, cnt);
             }
-            catch (err) {
-                throw Error(`AzureDataTablesClient::reduce has failed ${err.message}`);
-            }
-        });
+            return acc;
+        }
+        catch (err) {
+            throw Error(`AzureDataTablesClient::reduce has failed ${err.message}`);
+        }
     }
     /**
      * Filter rows.
@@ -510,78 +393,52 @@ class AzureDataTablesClient {
      *
      * @returns
      */
-    filter(props) {
-        var e_8, _b;
-        return __awaiter(this, void 0, void 0, function* () {
-            try {
-                const { table, fn } = props;
-                const client = yield this.table_client({ table });
-                const result = [];
-                const options = {};
-                let cnt = 0;
-                try {
-                    for (var _c = __asyncValues(client.listEntities()), _d; _d = yield _c.next(), !_d.done;) {
-                        const entity = _d.value;
-                        if (fn(entity, cnt)) {
-                            result.push(entity);
-                        }
-                        cnt++;
-                    }
+    async filter(props) {
+        try {
+            const { table, fn } = props;
+            const client = await this.table_client({ table });
+            const result = [];
+            const options = {};
+            let cnt = 0;
+            for await (const entity of client.listEntities()) {
+                if (fn(entity, cnt)) {
+                    result.push(entity);
                 }
-                catch (e_8_1) { e_8 = { error: e_8_1 }; }
-                finally {
-                    try {
-                        if (_d && !_d.done && (_b = _c.return)) yield _b.call(_c);
-                    }
-                    finally { if (e_8) throw e_8.error; }
-                }
-                return result;
+                cnt++;
             }
-            catch (err) {
-                throw Error(`AzureDataTablesClient::filter has failed - ${err.message}`);
-            }
-        });
+            return result;
+        }
+        catch (err) {
+            throw Error(`AzureDataTablesClient::filter has failed - ${err.message}`);
+        }
     }
     /**
      * Replace a table entirely with provided data.
      *
      * @param props
      */
-    map(props) {
-        var e_9, _b;
-        return __awaiter(this, void 0, void 0, function* () {
-            try {
-                const { table, fn } = props;
-                let { persist, partition, row } = props;
-                persist = persist === undefined ? false : persist;
-                if (persist && (!partition || !row))
-                    throw Error(`when arguing persist TRUE, partition and row must also be provided`);
-                const client = yield this.table_client({ table });
-                const result = [];
-                let cnt = 0;
-                try {
-                    for (var _c = __asyncValues(client.listEntities()), _d; _d = yield _c.next(), !_d.done;) {
-                        const entity = _d.value;
-                        result.push(fn(entity, cnt));
-                        cnt++;
-                    }
-                }
-                catch (e_9_1) { e_9 = { error: e_9_1 }; }
-                finally {
-                    try {
-                        if (_d && !_d.done && (_b = _c.return)) yield _b.call(_c);
-                    }
-                    finally { if (e_9) throw e_9.error; }
-                }
-                yield Promise.all(result);
-                if (persist)
-                    yield this.persist({ table, data: result, partition, row });
-                return result;
+    async map(props) {
+        try {
+            const { table, fn } = props;
+            let { persist, partition, row } = props;
+            persist = persist === undefined ? false : persist;
+            if (persist && (!partition || !row))
+                throw Error(`when arguing persist TRUE, partition and row must also be provided`);
+            const client = await this.table_client({ table });
+            const result = [];
+            let cnt = 0;
+            for await (const entity of client.listEntities()) {
+                result.push(fn(entity, cnt));
+                cnt++;
             }
-            catch (err) {
-                throw Error(`AzureDataTablesClient::replace has failed - ${err.message}`);
-            }
-        });
+            await Promise.all(result);
+            if (persist)
+                await this.persist({ table, data: result, partition, row });
+            return result;
+        }
+        catch (err) {
+            throw Error(`AzureDataTablesClient::replace has failed - ${err.message}`);
+        }
     }
     /**
      * Get the count of the rows.
@@ -591,18 +448,16 @@ class AzureDataTablesClient {
      *
      * @returns Promise<number> the number of rows
      */
-    count(props) {
-        return __awaiter(this, void 0, void 0, function* () {
-            try {
-                const { table } = props;
-                const client = yield this.table_client({ table });
-                const result = yield this.rows({ table, fields: ["PartitionKey"] });
-                return result.length;
-            }
-            catch (err) {
-                throw Error(`AzureDataTablesClient::count has failed - ${err.message}`);
-            }
-        });
+    async count(props) {
+        try {
+            const { table } = props;
+            const client = await this.table_client({ table });
+            const result = await this.rows({ table, fields: ["PartitionKey"] });
+            return result.length;
+        }
+        catch (err) {
+            throw Error(`AzureDataTablesClient::count has failed - ${err.message}`);
+        }
     }
     /**
      * Persist data to a table initially DROPPING/EMPTYING THE TABLE IF IT EXISTS leaving the table being a persisted
@@ -625,49 +480,47 @@ class AzureDataTablesClient {
      * @returns boolean TRUE on success
      * @throws Error
      */
-    persist(props) {
-        return __awaiter(this, void 0, void 0, function* () {
-            try {
-                const { table, data, partition, row } = props;
-                let { datatype, dropKeys, forceDrop } = props;
-                datatype = datatype || 'records';
-                forceDrop = forceDrop === undefined ? false : forceDrop;
-                dropKeys = dropKeys === undefined ? false : dropKeys;
-                //make sure we have a valid datatype
-                const validDataTypes = [
-                    'records'
-                ];
-                if (!validDataTypes.includes(datatype))
-                    throw new Error(`unknown datatype ${datatype} argued`);
-                //ensure a valid partition and row has been argued
-                if (typeof partition !== 'function' && typeof partition !== 'string')
-                    throw new Error('invalid parition argued - expected a function or a string');
-                if (typeof row !== 'function' && typeof row !== 'string')
-                    throw new Error('invalid row argued - expected a function or a string');
-                //clean out any existance of the target tablespace
-                const tableExists = yield this.exists({ table });
-                if (tableExists) {
-                    if (forceDrop) {
-                        yield this.drop({ table });
-                        yield this._waitUntilTableSpaceReady({ table });
-                    }
-                    else {
-                        yield this.empty({ table });
-                    }
+    async persist(props) {
+        try {
+            const { table, data, partition, row } = props;
+            let { datatype, dropKeys, forceDrop } = props;
+            datatype = datatype || 'records';
+            forceDrop = forceDrop === undefined ? false : forceDrop;
+            dropKeys = dropKeys === undefined ? false : dropKeys;
+            //make sure we have a valid datatype
+            const validDataTypes = [
+                'records'
+            ];
+            if (!validDataTypes.includes(datatype))
+                throw new Error(`unknown datatype ${datatype} argued`);
+            //ensure a valid partition and row has been argued
+            if (typeof partition !== 'function' && typeof partition !== 'string')
+                throw new Error('invalid parition argued - expected a function or a string');
+            if (typeof row !== 'function' && typeof row !== 'string')
+                throw new Error('invalid row argued - expected a function or a string');
+            //clean out any existance of the target tablespace
+            const tableExists = await this.exists({ table });
+            if (tableExists) {
+                if (forceDrop) {
+                    await this.drop({ table });
+                    await this._waitUntilTableSpaceReady({ table });
                 }
-                switch (datatype) {
-                    case 'records':
-                        yield this._insertAsRecords({ table, data, partition, row, dropKeys });
-                        break;
-                    default:
-                        throw Error(`unimplmented handler for datatype ${datatype}`);
+                else {
+                    await this.empty({ table });
                 }
-                return true;
             }
-            catch (err) {
-                throw Error(`AzureDataTablesClient::persist has failed - ${err.message}`);
+            switch (datatype) {
+                case 'records':
+                    await this._insertAsRecords({ table, data, partition, row, dropKeys });
+                    break;
+                default:
+                    throw Error(`unimplmented handler for datatype ${datatype}`);
             }
-        });
+            return true;
+        }
+        catch (err) {
+            throw Error(`AzureDataTablesClient::persist has failed - ${err.message}`);
+        }
     }
     /**
      * Fetch rows from multiple tables when each table is expected to have updated/new rows.
@@ -685,124 +538,109 @@ class AzureDataTablesClient {
      *
      * @returns
      */
-    accumulativeFetch(props) {
-        var e_10, _b;
-        return __awaiter(this, void 0, void 0, function* () {
-            try {
-                const { tables, sort } = props;
-                const result = [];
-                let i = 0;
-                for (const table of tables) {
-                    const client = yield this.table_client({ table });
-                    try {
-                        for (var _c = (e_10 = void 0, __asyncValues(client.listEntities())), _d; _d = yield _c.next(), !_d.done;) {
-                            const entity = _d.value;
-                            if (i === 0)
-                                result.push(entity);
-                            else {
-                                const replaceIdx = result.findIndex(row => row.partitionKey === entity.partitionKey && row.rowKey === entity.rowKey);
-                                if (replaceIdx === -1)
-                                    result.push(entity);
-                                else
-                                    result[replaceIdx] = entity;
-                            }
-                        }
+    async accumulativeFetch(props) {
+        try {
+            const { tables, sort } = props;
+            const result = [];
+            let i = 0;
+            for (const table of tables) {
+                const client = await this.table_client({ table });
+                for await (const entity of client.listEntities()) {
+                    if (i === 0)
+                        result.push(entity);
+                    else {
+                        const replaceIdx = result.findIndex(row => row.partitionKey === entity.partitionKey && row.rowKey === entity.rowKey);
+                        if (replaceIdx === -1)
+                            result.push(entity);
+                        else
+                            result[replaceIdx] = entity;
                     }
-                    catch (e_10_1) { e_10 = { error: e_10_1 }; }
-                    finally {
-                        try {
-                            if (_d && !_d.done && (_b = _c.return)) yield _b.call(_c);
-                        }
-                        finally { if (e_10) throw e_10.error; }
-                    }
-                    i++;
                 }
-                if (sort) {
-                    if (typeof sort !== 'function')
-                        throw Error(`argument sort has been argued but a sort function`);
-                    result.sort(sort);
-                }
-                return result;
+                i++;
             }
-            catch (err) {
-                throw Error(`AzureDataTablesClient::persist has failed - ${err.message}`);
+            if (sort) {
+                if (typeof sort !== 'function')
+                    throw Error(`argument sort has been argued but a sort function`);
+                result.sort(sort);
             }
-        });
+            return result;
+        }
+        catch (err) {
+            throw Error(`AzureDataTablesClient::persist has failed - ${err.message}`);
+        }
     }
-    _insertAsRecords(props) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const { table, data, partition, row, dropKeys } = props;
-            const resolvePartition = (record) => {
-                switch (typeof partition) {
-                    case 'function':
-                        return partition(record);
-                    case 'string':
-                        return record[partition];
-                    default:
-                        throw Error('invalid partition argued to _insertAsRecords');
-                }
-            };
-            const resolveRow = (record) => {
-                switch (typeof row) {
-                    case 'function':
-                        return row(record);
-                    case 'string':
-                        return record[row];
-                    default:
-                        throw Error('invalid row argued to _insertAsRecords');
-                }
-            };
-            //typescript's reduce is broken.. thus the <any> @see https://github.com/microsoft/TypeScript/issues/21061
-            const binned = data.reduce((spool, record) => {
-                record = Object.assign({}, record);
-                record.partitionKey = resolvePartition(record);
-                record.rowKey = resolveRow(record);
-                if (dropKeys && typeof partition === 'string') {
-                    delete record[partition];
-                }
-                if (dropKeys && typeof row === 'string') {
-                    delete record[row];
-                }
-                if (!spool.hasOwnProperty(record.partitionKey)) {
-                    spool[record.partitionKey] = { currentBinIdx: 0, bins: [[]] };
-                }
-                let currentBinIdx = spool[record.partitionKey].currentBinIdx;
-                if (spool[record.partitionKey].bins[currentBinIdx].length > 99) {
-                    spool[record.partitionKey].currentBinIdx++;
-                    currentBinIdx = spool[record.partitionKey].currentBinIdx;
-                    spool[record.partitionKey].bins.push([]);
-                }
-                spool[record.partitionKey].bins[currentBinIdx].push(record);
-                return spool;
-            }, {});
-            const client = yield this.table_client({ table });
-            const batchStack = [];
-            yield Promise.all(Object.keys(binned).reduce((stack, pk) => {
-                return stack.concat(binned[pk].bins.map((bin) => __awaiter(this, void 0, void 0, function* () {
-                    const actions = [];
-                    bin.map(itm => actions.push(['create', itm]));
-                    batchStack.push(actions);
-                    //const batch = client.createBatch(pk);
-                    //const batch = new TableTransaction();
-                    //batchStack.push(batch)
-                    //batchStack.push(actions);
-                    return;
-                    //return bin.map(itm => batch.createEntity(itm))
-                    //return batch.createEntities(bin);
-                })));
-            }, []));
-            for (let i = 0; i < batchStack.length; i++) {
-                const client = yield this.table_client({ table });
-                yield client.submitTransaction(batchStack[i]);
+    async _insertAsRecords(props) {
+        const { table, data, partition, row, dropKeys } = props;
+        const resolvePartition = (record) => {
+            switch (typeof partition) {
+                case 'function':
+                    return partition(record);
+                case 'string':
+                    return record[partition];
+                default:
+                    throw Error('invalid partition argued to _insertAsRecords');
             }
-            // await Promise.all(batchStack.map(batch => batch.submitTransaction()))
-            // await Promise.all(batchStack.map( async batch => {
-            //     batch = batch.map(bt => { bt[1].partitionKey = batch[0][1].partitionKey; return bt});
-            //     const result = await client.submitTransaction(batch);
-            //     return result;
-            // }));
-            return true;
-        });
+        };
+        const resolveRow = (record) => {
+            switch (typeof row) {
+                case 'function':
+                    return row(record);
+                case 'string':
+                    return record[row];
+                default:
+                    throw Error('invalid row argued to _insertAsRecords');
+            }
+        };
+        //typescript's reduce is broken.. thus the <any> @see https://github.com/microsoft/TypeScript/issues/21061
+        const binned = data.reduce((spool, record) => {
+            record = Object.assign({}, record);
+            record.partitionKey = resolvePartition(record);
+            record.rowKey = resolveRow(record);
+            if (dropKeys && typeof partition === 'string') {
+                delete record[partition];
+            }
+            if (dropKeys && typeof row === 'string') {
+                delete record[row];
+            }
+            if (!spool.hasOwnProperty(record.partitionKey)) {
+                spool[record.partitionKey] = { currentBinIdx: 0, bins: [[]] };
+            }
+            let currentBinIdx = spool[record.partitionKey].currentBinIdx;
+            if (spool[record.partitionKey].bins[currentBinIdx].length > 99) {
+                spool[record.partitionKey].currentBinIdx++;
+                currentBinIdx = spool[record.partitionKey].currentBinIdx;
+                spool[record.partitionKey].bins.push([]);
+            }
+            spool[record.partitionKey].bins[currentBinIdx].push(record);
+            return spool;
+        }, {});
+        const client = await this.table_client({ table });
+        const batchStack = [];
+        await Promise.all(Object.keys(binned).reduce((stack, pk) => {
+            return stack.concat(binned[pk].bins.map(async (bin) => {
+                const actions = [];
+                bin.map(itm => actions.push(['create', itm]));
+                batchStack.push(actions);
+                //const batch = client.createBatch(pk);
+                //const batch = new TableTransaction();
+                //batchStack.push(batch)
+                //batchStack.push(actions);
+                return;
+                //return bin.map(itm => batch.createEntity(itm))
+                //return batch.createEntities(bin);
+            }));
+        }, []));
+        for (let i = 0; i < batchStack.length; i++) {
+            const client = await this.table_client({ table });
+            await client.submitTransaction(batchStack[i]);
+        }
+        // await Promise.all(batchStack.map(batch => batch.submitTransaction()))
+        // await Promise.all(batchStack.map( async batch => {
+        //     batch = batch.map(bt => { bt[1].partitionKey = batch[0][1].partitionKey; return bt});
+        //     const result = await client.submitTransaction(batch);
+        //     return result;
+        // }));
+        return true;
     }
     /**
      *
