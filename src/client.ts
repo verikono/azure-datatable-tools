@@ -3,7 +3,7 @@ import {
     TableServiceClient,
     TableTransaction,
     TransactionAction,
-    TablesSharedKeyCredential,
+    AzureNamedKeyCredential,
     ListTableEntitiesOptions
 } from '@azure/data-tables';
 
@@ -885,7 +885,7 @@ export class AzureDataTablesClient {
         }
 
 
-        const credential = new TablesSharedKeyCredential(
+        const credential = new AzureNamedKeyCredential(
             process.env[k['AZURE_STORAGE_ACCOUNT']],
             process.env[k['AZURE_STORAGE_ACCOUNT_KEY']]
         );

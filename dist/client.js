@@ -661,7 +661,7 @@ class AzureDataTablesClient {
             if (typeof process.env[k[key]] !== 'string' || process.env[k[key]].length === 0)
                 throw Error(`missing environment key ${key}`);
         }
-        const credential = new data_tables_1.TablesSharedKeyCredential(process.env[k['AZURE_STORAGE_ACCOUNT']], process.env[k['AZURE_STORAGE_ACCOUNT_KEY']]);
+        const credential = new data_tables_1.AzureNamedKeyCredential(process.env[k['AZURE_STORAGE_ACCOUNT']], process.env[k['AZURE_STORAGE_ACCOUNT_KEY']]);
         const url = `https://${process.env[k['AZURE_STORAGE_ACCOUNT']]}.table.core.windows.net`;
         switch (type) {
             case 'service':
